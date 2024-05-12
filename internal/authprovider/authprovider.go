@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/H-BF/sgroups-k8s-adapter/pkg/authprovider"
+	"github.com/H-BF/gw/pkg/authprovider"
 
 	"github.com/casbin/casbin/v2"
 )

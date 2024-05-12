@@ -2,18 +2,20 @@ package api
 
 import (
 	"context"
-	"github.com/H-BF/sgroups-k8s-adapter/internal/client/SecGroup"
+
+	ap "github.com/H-BF/gw/internal/authprovider"
+	"github.com/H-BF/gw/internal/client/SecGroup"
+	"github.com/H-BF/gw/pkg/authprovider"
+	"github.com/H-BF/protos/pkg/api/sgroups"
+	"github.com/H-BF/protos/pkg/api/sgroups/sgroupsconnect"
+
+	"connectrpc.com/connect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	sgroups "github.com/H-BF/protos/pkg/api/sgroups"
-	"github.com/H-BF/protos/pkg/api/sgroups/sgroupsconnect"
-	ap "github.com/H-BF/sgroups-k8s-adapter/internal/authprovider"
-	"github.com/H-BF/sgroups-k8s-adapter/pkg/authprovider"
-
-	"connectrpc.com/connect"
 )
+
+const userIDHeaderKey = "userId"
 
 type SecGroupService struct {
 	authPlugin authprovider.AuthProvider
@@ -50,7 +52,7 @@ func (s SecGroupService) Sync(
 	ctx context.Context,
 	c *connect.Request[sgroups.SyncReq],
 ) (*connect.Response[emptypb.Empty], error) {
-	sub := c.Header().Get("user_id")
+	sub := c.Header().Get(userIDHeaderKey)
 	act := getActionBySyncOp(c.Msg.SyncOp.String())
 
 	switch getSyncResourceByRequest(c) {
@@ -68,7 +70,7 @@ func (s SecGroupService) Sync(
 				return nil, err
 			}
 		}
-	case ap.S2F:
+	case ap.FQDN_S2F:
 		for _, s2f := range c.Msg.GetFqdnRules().GetRules() {
 			obj := s2f.GetSgFrom()
 			if err := s.checkPermission(ctx, sub, obj, act); err != nil {
@@ -86,7 +88,7 @@ func (s SecGroupService) ListNetworks(
 	ctx context.Context,
 	c *connect.Request[sgroups.ListNetworksReq],
 ) (*connect.Response[sgroups.ListNetworksResp], error) {
-	sub := c.Header().Get("user_id")
+	sub := c.Header().Get(userIDHeaderKey)
 	act := ap.ReadAction
 
 	for _, obj := range c.Msg.GetNeteworkNames() {
@@ -102,7 +104,7 @@ func (s SecGroupService) ListSecurityGroups(
 	ctx context.Context,
 	c *connect.Request[sgroups.ListSecurityGroupsReq],
 ) (*connect.Response[sgroups.ListSecurityGroupsResp], error) {
-	sub := c.Header().Get("user_id")
+	sub := c.Header().Get(userIDHeaderKey)
 	act := ap.ReadAction
 
 	for _, obj := range c.Msg.GetSgNames() {
@@ -118,7 +120,7 @@ func (s SecGroupService) GetRules(
 	ctx context.Context,
 	c *connect.Request[sgroups.GetRulesReq],
 ) (*connect.Response[sgroups.RulesResp], error) {
-	sub := c.Header().Get("user_id")
+	sub := c.Header().Get(userIDHeaderKey)
 	act := ap.ReadAction
 	obj := c.Msg.GetSgFrom()
 

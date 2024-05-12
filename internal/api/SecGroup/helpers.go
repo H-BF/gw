@@ -2,8 +2,8 @@ package api
 
 import (
 	"connectrpc.com/connect"
+	"github.com/H-BF/gw/internal/authprovider"
 	"github.com/H-BF/protos/pkg/api/sgroups"
-	"github.com/H-BF/sgroups-k8s-adapter/internal/authprovider"
 )
 
 func getSyncResourceByRequest(request *connect.Request[sgroups.SyncReq]) string {

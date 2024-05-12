@@ -2,7 +2,7 @@ GO_BIN ?= $(shell which go)
 GOLANGCI_BIN ?= $(shell which golangci-lint)
 
 APP_DIR ?= cmd
-APP_NAME := sgroups-k8s-adapter
+APP_NAME := gw
 APP_PATH := $(APP_DIR)/$(APP_NAME).go
 
 .PHONY: help

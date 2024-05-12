@@ -1,4 +1,4 @@
-module github.com/H-BF/sgroups-k8s-adapter
+module github.com/H-BF/gw
 
 go 1.22.2
 
