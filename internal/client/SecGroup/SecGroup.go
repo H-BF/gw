@@ -1,12 +1,14 @@
 package SecGroup
 
 import (
-	"connectrpc.com/connect"
 	"context"
+	"net/http"
+
+	"connectrpc.com/connect"
 	"github.com/H-BF/protos/pkg/api/sgroups"
 	"github.com/H-BF/protos/pkg/api/sgroups/sgroupsconnect"
+	"golang.org/x/net/http2"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"net/http"
 )
 
 type secGroupClient struct {
@@ -14,8 +16,15 @@ type secGroupClient struct {
 }
 
 func NewClient(addr string) sgroupsconnect.SecGroupServiceClient {
+	// client for transferring data via http2 to sgroups grpc server
+	httpClient := &http.Client{
+		Transport: &http2.Transport{
+			AllowHTTP: true,
+		},
+	}
+
 	client := sgroupsconnect.NewSecGroupServiceClient(
-		http.DefaultClient,
+		httpClient,
 		addr,
 		connect.WithGRPC(),
 	)
@@ -40,11 +49,17 @@ func (s secGroupClient) SyncStatuses(ctx context.Context, c *connect.Request[emp
 	panic("implement me")
 }
 
-func (s secGroupClient) ListNetworks(ctx context.Context, c *connect.Request[sgroups.ListNetworksReq]) (*connect.Response[sgroups.ListNetworksResp], error) {
+func (s secGroupClient) ListNetworks(
+	ctx context.Context,
+	c *connect.Request[sgroups.ListNetworksReq],
+) (*connect.Response[sgroups.ListNetworksResp], error) {
 	return s.client.ListNetworks(ctx, c)
 }
 
-func (s secGroupClient) ListSecurityGroups(ctx context.Context, c *connect.Request[sgroups.ListSecurityGroupsReq]) (*connect.Response[sgroups.ListSecurityGroupsResp], error) {
+func (s secGroupClient) ListSecurityGroups(
+	ctx context.Context,
+	c *connect.Request[sgroups.ListSecurityGroupsReq],
+) (*connect.Response[sgroups.ListSecurityGroupsResp], error) {
 	return s.client.ListSecurityGroups(ctx, c)
 }
 
@@ -53,7 +68,10 @@ func (s secGroupClient) GetSgSubnets(ctx context.Context, c *connect.Request[sgr
 	panic("implement me")
 }
 
-func (s secGroupClient) GetRules(ctx context.Context, c *connect.Request[sgroups.GetRulesReq]) (*connect.Response[sgroups.RulesResp], error) {
+func (s secGroupClient) GetRules(
+	ctx context.Context,
+	c *connect.Request[sgroups.GetRulesReq],
+) (*connect.Response[sgroups.RulesResp], error) {
 	return s.client.GetRules(ctx, c)
 }
 
