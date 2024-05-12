@@ -12,7 +12,7 @@ func getSyncResourceByRequest(request *connect.Request[sgroups.SyncReq]) string 
 	}
 
 	if request.Msg.GetFqdnRules() != nil {
-		return authprovider.S2F
+		return authprovider.FQDN_S2F
 	}
 
 	if request.Msg.GetGroups() != nil {

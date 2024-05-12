@@ -1,29 +1,20 @@
+p, alice, *, admin
+p, bob, FQDNS2F, owner
+p, bob, *, client
+p, clare, *, client
 g, read-ref, read
 g, read-ref, reference
-
 g, admin, read-ref
 g, admin, edit
-
 g, owner, read-ref
 g, owner, edit
-
 g, client, read-ref
-
 g2, Network, nw-1
 g2, Network, nw-2
 g2, Network, nw-3
-
 g2, SecurityGroup, sg-1
 g2, SecurityGroup, sg-2
 g2, SecurityGroup, sg-3
-
-g2, S2F, s2f-1
-g2, S2F, s2f-2
-g2, S2F, s2f-3
-
-p, alice, *, admin
-
-p, bob, S2F, owner
-p, bob, *, client
-
-p, clare, *, client
+g2, FQDNS2F, fqdn-1
+g2, FQDNS2F, fqdn-2
+g2, FQDNS2F, fqdn-3

@@ -2,9 +2,12 @@ package authprovider
 
 import (
 	"context"
-	"github.com/H-BF/sgroups-k8s-adapter/pkg/authprovider"
-	"github.com/casbin/casbin/v2"
+	"errors"
 	"strings"
+
+	"github.com/H-BF/sgroups-k8s-adapter/pkg/authprovider"
+
+	"github.com/casbin/casbin/v2"
 )
 
 type CasbinAuthProvider struct {
@@ -20,13 +23,13 @@ const ( // available actions of a role model
 const ( // available role model resources
 	NETWORK        = "Network"
 	SECURITY_GROUP = "SecurityGroup"
-	S2F            = "S2F"
+	FQDN_S2F       = "FQDNS2F"
 )
 
 const (
 	networkPrefix       = "nw-"
 	securityGroupPrefix = "sg-"
-	rulePrefix          = "s2f-"
+	fqdnRulePrefix      = "fqdn-"
 )
 
 func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvider, error) {
@@ -35,33 +38,41 @@ func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvi
 		return nil, err
 	}
 
-	adapter, err := newCasbinFileAdapter(policyPath, enforcer.GetAdapter())
-	if err != nil {
-		return nil, err
-	}
-
-	enforcer.SetAdapter(adapter)
-	if err := enforcer.LoadPolicy(); err != nil {
-		return nil, err
-	}
-
 	return &CasbinAuthProvider{enforcer}, nil
 }
 
 func (c CasbinAuthProvider) CheckPermission(_ context.Context, sub, obj, act string) (bool, error) {
-	allRoles := c.enforcer.GetAllRoles()
-	for _, role := range allRoles {
-		switch {
-		case role == obj:
-			return c.enforcer.Enforce(sub, obj, act)
-		case strings.HasPrefix(role, networkPrefix):
-			return c.enforcer.AddPolicy([]string{"g2", NETWORK, obj})
-		case strings.HasPrefix(role, securityGroupPrefix):
-			return c.enforcer.AddPolicy([]string{"g2", SECURITY_GROUP, obj})
-		case strings.HasPrefix(role, rulePrefix):
-			return c.enforcer.AddPolicy([]string{"g2", S2F, obj})
-		}
+	if _, err := c.addResourceToNamedGroup(obj); err != nil {
+		return false, err
 	}
 
 	return c.enforcer.Enforce(sub, obj, act)
+}
+
+func (c CasbinAuthProvider) addResourceToNamedGroup(resourceName string) (bool, error) {
+	var group string
+
+	switch {
+	case strings.HasPrefix(resourceName, networkPrefix):
+		group = NETWORK
+	case strings.HasPrefix(resourceName, securityGroupPrefix):
+		group = SECURITY_GROUP
+	case strings.HasPrefix(resourceName, fqdnRulePrefix):
+		group = FQDN_S2F
+	default:
+		return false, errors.New("unknown resource type")
+	}
+
+	// if the resource has already been created in the group,
+	// then a new entry will not be written.
+	isAdded, err := c.enforcer.AddNamedGroupingPolicy("g2", group, resourceName)
+	if err != nil {
+		return false, err
+	}
+
+	if err = c.enforcer.SavePolicy(); err != nil {
+		return false, err
+	}
+
+	return isAdded, nil
 }
