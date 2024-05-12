@@ -1,4 +1,5 @@
 GO_BIN ?= $(shell which go)
+GOLANGCI_BIN ?= $(shell which golangci-lint)
 
 APP_DIR ?= cmd
 APP_NAME := sgroups-k8s-adapter
@@ -21,3 +22,13 @@ run: ## run app with go runtime
 	@echo run app on dev mode && \
 	$(GO_BIN) run $(APP_PATH) && \
 	echo app stopped
+
+.PHONY: lint
+lint: ## run full lint
+	@echo full lint... && \
+	$(GOLANGCI_BIN) cache clean && \
+	$(GOLANGCI_BIN) run \
+		--timeout=120s \
+		--config=$(CURDIR)/.golangci.yaml \
+		-v $(CURDIR)/... && \
+	echo -=OK=-
