@@ -2,6 +2,8 @@ package SecGroup
 
 import (
 	"context"
+	"crypto/tls"
+	"net"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -20,6 +22,9 @@ func NewClient(addr string) sgroupsconnect.SecGroupServiceClient {
 	httpClient := &http.Client{
 		Transport: &http2.Transport{
 			AllowHTTP: true,
+			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+				return net.Dial(network, addr)
+			},
 		},
 	}
 
