@@ -17,12 +17,6 @@ const ( // available actions of a role model
 	ReferenceAction = "reference"
 )
 
-const ( // available role model resources
-	NETWORK        = "Network"
-	SECURITY_GROUP = "SecurityGroup"
-	FQDN_S2F       = "FQDNS2F"
-)
-
 func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvider, error) {
 	enforcer, err := casbin.NewEnforcer(modelPath, policyPath)
 	if err != nil {
