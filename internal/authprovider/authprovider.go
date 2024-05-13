@@ -2,9 +2,6 @@ package authprovider
 
 import (
 	"context"
-	"errors"
-	"strings"
-
 	"github.com/H-BF/gw/pkg/authprovider"
 
 	"github.com/casbin/casbin/v2"
@@ -26,12 +23,6 @@ const ( // available role model resources
 	FQDN_S2F       = "FQDNS2F"
 )
 
-const (
-	networkPrefix       = "nw-"
-	securityGroupPrefix = "sg-"
-	fqdnRulePrefix      = "fqdn-"
-)
-
 func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvider, error) {
 	enforcer, err := casbin.NewEnforcer(modelPath, policyPath)
 	if err != nil {
@@ -42,7 +33,7 @@ func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvi
 }
 
 func (c CasbinAuthProvider) CheckPermission(_ context.Context, sub, obj, act string) (bool, error) {
-	if _, err := c.addResourceToNamedGroup(obj); err != nil {
+	if _, err := c.addResourceToNamedGroup(sub, obj); err != nil {
 		return false, err
 	}
 
@@ -50,23 +41,11 @@ func (c CasbinAuthProvider) CheckPermission(_ context.Context, sub, obj, act str
 }
 
 // TODO: не завязываться на имя ресурса и добавлять его в группу ресурсов пользователя
-func (c CasbinAuthProvider) addResourceToNamedGroup(resourceName string) (bool, error) {
-	var group string
-
-	switch {
-	case strings.HasPrefix(resourceName, networkPrefix):
-		group = NETWORK
-	case strings.HasPrefix(resourceName, securityGroupPrefix):
-		group = SECURITY_GROUP
-	case strings.HasPrefix(resourceName, fqdnRulePrefix):
-		group = FQDN_S2F
-	default:
-		return false, errors.New("unknown resource type")
-	}
+func (c CasbinAuthProvider) addResourceToNamedGroup(userId, resourceName string) (bool, error) {
 
 	// if the resource has already been created in the group,
 	// then a new entry will not be written.
-	isAdded, err := c.enforcer.AddNamedGroupingPolicy("g2", group, resourceName)
+	isAdded, err := c.enforcer.AddNamedGroupingPolicy("g2", userId+"-res", resourceName)
 	if err != nil {
 		return false, err
 	}
