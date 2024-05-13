@@ -40,7 +40,6 @@ func (c CasbinAuthProvider) CheckPermission(_ context.Context, sub, obj, act str
 	return c.enforcer.Enforce(sub, obj, act)
 }
 
-// TODO: не завязываться на имя ресурса и добавлять его в группу ресурсов пользователя
 func (c CasbinAuthProvider) addResourceToNamedGroup(userId, resourceName string) (bool, error) {
 
 	// if the resource has already been created in the group,
