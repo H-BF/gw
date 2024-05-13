@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	ap "github.com/H-BF/gw/internal/authprovider"
 	"github.com/H-BF/gw/internal/client/SecGroup"
 	"github.com/H-BF/gw/pkg/authprovider"
 	"github.com/H-BF/protos/pkg/api/sgroups"
@@ -52,33 +51,19 @@ func (s SecGroupService) Sync(
 	ctx context.Context,
 	c *connect.Request[sgroups.SyncReq],
 ) (*connect.Response[emptypb.Empty], error) {
-	sub := c.Header().Get(userIDHeaderKey)
-	act := getActionBySyncOp(c.Msg.SyncOp.String())
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	switch getSyncResourceByRequest(c) {
-	case ap.NETWORK:
-		for _, nw := range c.Msg.GetNetworks().GetNetworks() {
-			obj := nw.GetName()
-			if err := s.checkPermission(ctx, sub, obj, act); err != nil {
-				return nil, err
-			}
+	var tt RTuples
+	if err := tt.FromSync(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	for _, t := range tt {
+		if err := s.checkPermission(ctx, t[0], t[1], t[2]); err != nil {
+			return nil, err
 		}
-	case ap.SECURITY_GROUP:
-		for _, sg := range c.Msg.GetGroups().GetGroups() {
-			obj := sg.GetName()
-			if err := s.checkPermission(ctx, sub, obj, act); err != nil {
-				return nil, err
-			}
-		}
-	case ap.FQDN_S2F:
-		for _, s2f := range c.Msg.GetFqdnRules().GetRules() {
-			obj := s2f.GetSgFrom()
-			if err := s.checkPermission(ctx, sub, obj, act); err != nil {
-				return nil, err
-			}
-		}
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "invalid request for sync method")
 	}
 
 	return s.gwClient.Sync(ctx, c)
@@ -88,11 +73,17 @@ func (s SecGroupService) ListNetworks(
 	ctx context.Context,
 	c *connect.Request[sgroups.ListNetworksReq],
 ) (*connect.Response[sgroups.ListNetworksResp], error) {
-	sub := c.Header().Get(userIDHeaderKey)
-	act := ap.ReadAction
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	for _, obj := range c.Msg.GetNeteworkNames() {
-		if err := s.checkPermission(ctx, sub, obj, act); err != nil {
+	var tt RTuples
+	if err := tt.FromListNetworks(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	for _, t := range tt {
+		if err := s.checkPermission(ctx, t[0], t[1], t[2]); err != nil {
 			return nil, err
 		}
 	}
@@ -104,11 +95,17 @@ func (s SecGroupService) ListSecurityGroups(
 	ctx context.Context,
 	c *connect.Request[sgroups.ListSecurityGroupsReq],
 ) (*connect.Response[sgroups.ListSecurityGroupsResp], error) {
-	sub := c.Header().Get(userIDHeaderKey)
-	act := ap.ReadAction
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	for _, obj := range c.Msg.GetSgNames() {
-		if err := s.checkPermission(ctx, sub, obj, act); err != nil {
+	var tt RTuples
+	if err := tt.FromListSecurityGroups(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	for _, t := range tt {
+		if err := s.checkPermission(ctx, t[0], t[1], t[2]); err != nil {
 			return nil, err
 		}
 	}
@@ -120,12 +117,19 @@ func (s SecGroupService) GetRules(
 	ctx context.Context,
 	c *connect.Request[sgroups.GetRulesReq],
 ) (*connect.Response[sgroups.RulesResp], error) {
-	sub := c.Header().Get(userIDHeaderKey)
-	act := ap.ReadAction
-	obj := c.Msg.GetSgFrom()
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	if err := s.checkPermission(ctx, sub, obj, act); err != nil {
-		return nil, err
+	var tt RTuples
+	if err := tt.FromGetRules(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	for _, t := range tt {
+		if err := s.checkPermission(ctx, t[0], t[1], t[2]); err != nil {
+			return nil, err
+		}
 	}
 
 	return s.gwClient.GetRules(ctx, c)
