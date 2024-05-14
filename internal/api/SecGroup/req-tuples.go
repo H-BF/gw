@@ -32,19 +32,24 @@ func (t *RTuples) FromSync(req *sgroups.SyncReq, sub string) error {
 		}
 	case *sgroups.SyncReq_FqdnRules:
 		for _, rule := range req.GetFqdnRules().GetRules() {
-			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), act})
+			*t = append(*t, [3]string{sub, rule.GetSgFrom(), ap.ReferenceAction})
 		}
 	case *sgroups.SyncReq_SgRules:
 		for _, rule := range req.GetSgRules().GetRules() {
-			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), act})
+			*t = append(*t, [3]string{sub, rule.GetSgFrom(), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, rule.GetSgTo(), ap.ReferenceAction})
 		}
 	case *sgroups.SyncReq_CidrSgRules:
 		for _, rule := range req.GetCidrSgRules().GetRules() {
-			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), act})
+			*t = append(*t, [3]string{sub, rule.GetSG(), ap.ReferenceAction})
 		}
 	case *sgroups.SyncReq_SgSgRules:
 		for _, rule := range req.GetSgSgRules().GetRules() {
-			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), act})
+			*t = append(*t, [3]string{sub, rule.GetSgLocal(), ap.ReferenceAction})
 		}
 	default:
 		return errors.New("unsupported sync subject")
