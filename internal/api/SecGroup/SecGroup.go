@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	ap "github.com/H-BF/gw/internal/authprovider"
 	"github.com/H-BF/gw/internal/client/SecGroup"
 	"github.com/H-BF/gw/pkg/authprovider"
 	"github.com/H-BF/protos/pkg/api/sgroups"
@@ -31,18 +30,24 @@ func NewSecGroupService(authPlugin authprovider.AuthProvider) sgroupsconnect.Sec
 	}
 }
 
-func (s SecGroupService) checkPermission(ctx context.Context, sub, obj, act string) error {
-	isAuth, err := s.authPlugin.CheckPermission(ctx, sub, obj, act)
-	if err != nil {
-		return err
-	}
+func (s SecGroupService) checkPermissions(ctx context.Context, reqTuples RTuples) error {
+	for _, authReq := range reqTuples {
+		// TODO:
+		// в authPlugin.CheckPermission создается политика при каждом запросе
+		// если запрос будет отклонен на последующих authReq как не авторизованный то эти политики так и останутся
+		// хотя запрос в сгрупс не будет отправлен и ресурсы не будут созданы
+		isAuth, err := s.authPlugin.CheckPermission(ctx, authReq[0], authReq[1], authReq[2])
+		if err != nil {
+			return err
+		}
 
-	if !isAuth {
-		return status.Errorf(
-			codes.PermissionDenied,
-			"user %s does not have access or action permision to the %s resource, action - %s",
-			sub, obj, act,
-		)
+		if !isAuth {
+			return status.Errorf(
+				codes.PermissionDenied,
+				"user %s does not have access or action permision to the %s resource, action - %s",
+				authReq[0], authReq[1], authReq[2],
+			)
+		}
 	}
 
 	return nil
@@ -52,33 +57,17 @@ func (s SecGroupService) Sync(
 	ctx context.Context,
 	c *connect.Request[sgroups.SyncReq],
 ) (*connect.Response[emptypb.Empty], error) {
-	sub := c.Header().Get(userIDHeaderKey)
-	act := getActionBySyncOp(c.Msg.SyncOp.String())
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	switch getSyncResourceByRequest(c) {
-	case ap.NETWORK:
-		for _, nw := range c.Msg.GetNetworks().GetNetworks() {
-			obj := nw.GetName()
-			if err := s.checkPermission(ctx, sub, obj, act); err != nil {
-				return nil, err
-			}
-		}
-	case ap.SECURITY_GROUP:
-		for _, sg := range c.Msg.GetGroups().GetGroups() {
-			obj := sg.GetName()
-			if err := s.checkPermission(ctx, sub, obj, act); err != nil {
-				return nil, err
-			}
-		}
-	case ap.FQDN_S2F:
-		for _, s2f := range c.Msg.GetFqdnRules().GetRules() {
-			obj := s2f.GetSgFrom()
-			if err := s.checkPermission(ctx, sub, obj, act); err != nil {
-				return nil, err
-			}
-		}
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "invalid request for sync method")
+	var tt RTuples
+	if err := tt.FromSync(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if err := s.checkPermissions(ctx, tt); err != nil {
+		return nil, err
 	}
 
 	return s.gwClient.Sync(ctx, c)
@@ -88,13 +77,17 @@ func (s SecGroupService) ListNetworks(
 	ctx context.Context,
 	c *connect.Request[sgroups.ListNetworksReq],
 ) (*connect.Response[sgroups.ListNetworksResp], error) {
-	sub := c.Header().Get(userIDHeaderKey)
-	act := ap.ReadAction
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	for _, obj := range c.Msg.GetNeteworkNames() {
-		if err := s.checkPermission(ctx, sub, obj, act); err != nil {
-			return nil, err
-		}
+	var tt RTuples
+	if err := tt.FromListNetworks(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if err := s.checkPermissions(ctx, tt); err != nil {
+		return nil, err
 	}
 
 	return s.gwClient.ListNetworks(ctx, c)
@@ -104,13 +97,17 @@ func (s SecGroupService) ListSecurityGroups(
 	ctx context.Context,
 	c *connect.Request[sgroups.ListSecurityGroupsReq],
 ) (*connect.Response[sgroups.ListSecurityGroupsResp], error) {
-	sub := c.Header().Get(userIDHeaderKey)
-	act := ap.ReadAction
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	for _, obj := range c.Msg.GetSgNames() {
-		if err := s.checkPermission(ctx, sub, obj, act); err != nil {
-			return nil, err
-		}
+	var tt RTuples
+	if err := tt.FromListSecurityGroups(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if err := s.checkPermissions(ctx, tt); err != nil {
+		return nil, err
 	}
 
 	return s.gwClient.ListSecurityGroups(ctx, c)
@@ -120,11 +117,16 @@ func (s SecGroupService) GetRules(
 	ctx context.Context,
 	c *connect.Request[sgroups.GetRulesReq],
 ) (*connect.Response[sgroups.RulesResp], error) {
-	sub := c.Header().Get(userIDHeaderKey)
-	act := ap.ReadAction
-	obj := c.Msg.GetSgFrom()
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	if err := s.checkPermission(ctx, sub, obj, act); err != nil {
+	var tt RTuples
+	if err := tt.FromGetRules(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if err := s.checkPermissions(ctx, tt); err != nil {
 		return nil, err
 	}
 
@@ -157,14 +159,40 @@ func (s SecGroupService) FindRules(
 	ctx context.Context,
 	c *connect.Request[sgroups.FindRulesReq],
 ) (*connect.Response[sgroups.RulesResp], error) {
-	return nil, status.Error(codes.Unimplemented, "method FindRules not implemented")
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var tt RTuples
+	if err := tt.FromFindRules(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if err := s.checkPermissions(ctx, tt); err != nil {
+		return nil, err
+	}
+
+	return s.gwClient.FindRules(ctx, c)
 }
 
 func (s SecGroupService) FindFqdnRules(
 	ctx context.Context,
 	c *connect.Request[sgroups.FindFqdnRulesReq],
 ) (*connect.Response[sgroups.FqdnRulesResp], error) {
-	return nil, status.Error(codes.Unimplemented, "method FindFqdnRules not implemented")
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var tt RTuples
+	if err := tt.FromFindFqdnRules(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if err := s.checkPermissions(ctx, tt); err != nil {
+		return nil, err
+	}
+
+	return s.gwClient.FindFqdnRules(ctx, c)
 }
 
 func (s SecGroupService) FindSgIcmpRules(
@@ -185,14 +213,40 @@ func (s SecGroupService) FindCidrSgRules(
 	ctx context.Context,
 	c *connect.Request[sgroups.FindCidrSgRulesReq],
 ) (*connect.Response[sgroups.CidrSgRulesResp], error) {
-	return nil, status.Error(codes.Unimplemented, "method FindCidrSgRules not implemented")
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var tt RTuples
+	if err := tt.FromFindCidrSgRules(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if err := s.checkPermissions(ctx, tt); err != nil {
+		return nil, err
+	}
+
+	return s.gwClient.FindCidrSgRules(ctx, c)
 }
 
 func (s SecGroupService) FindSgSgRules(
 	ctx context.Context,
 	c *connect.Request[sgroups.FindSgSgRulesReq],
 ) (*connect.Response[sgroups.SgSgRulesResp], error) {
-	return nil, status.Error(codes.Unimplemented, "method FindSgSgRules not implemented")
+	sub, err := extractSub(c)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var tt RTuples
+	if err := tt.FromFindSgSgRules(c.Msg, sub); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if err := s.checkPermissions(ctx, tt); err != nil {
+		return nil, err
+	}
+
+	return s.gwClient.FindSgSgRules(ctx, c)
 }
 
 func (s SecGroupService) FindIESgSgIcmpRules(
