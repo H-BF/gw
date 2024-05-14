@@ -1,7 +1,18 @@
 package authprovider
 
-import "context"
+import (
+	"context"
+)
+
+type AuthWithExistResp struct {
+	Exist      bool
+	Authorized bool
+}
 
 type AuthProvider interface {
-	CheckPermission(ctx context.Context, sub, obj, act string) (bool, error)
+	// Authorize does authorization for passed request tuple {sub, obj, act}
+	Authorize(ctx context.Context, sub, obj, act string) (bool, error)
+
+	// AuthorizeIfExist does authorization and returns flag for existence of `sub` in policies
+	AuthorizeIfExist(ctx context.Context, sub, obj, act string) (AuthWithExistResp, error)
 }

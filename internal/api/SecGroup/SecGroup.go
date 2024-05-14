@@ -32,11 +32,7 @@ func NewSecGroupService(authPlugin authprovider.AuthProvider) sgroupsconnect.Sec
 
 func (s SecGroupService) checkPermissions(ctx context.Context, reqTuples RTuples) error {
 	for _, authReq := range reqTuples {
-		// TODO:
-		// в authPlugin.CheckPermission создается политика при каждом запросе
-		// если запрос будет отклонен на последующих authReq как не авторизованный то эти политики так и останутся
-		// хотя запрос в сгрупс не будет отправлен и ресурсы не будут созданы
-		isAuth, err := s.authPlugin.CheckPermission(ctx, authReq[0], authReq[1], authReq[2])
+		isAuth, err := s.authPlugin.Authorize(ctx, authReq[0], authReq[1], authReq[2])
 		if err != nil {
 			return err
 		}
@@ -66,11 +62,33 @@ func (s SecGroupService) Sync(
 	if err := tt.FromSync(c.Msg, sub); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := s.checkPermissions(ctx, tt); err != nil {
-		return nil, err
+
+	var toCreate RTuples
+
+	for _, authReq := range tt {
+		authResp, err := s.authPlugin.AuthorizeIfExist(ctx, authReq[0], authReq[1], authReq[2])
+		if err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		}
+
+		if !authResp.Authorized {
+			return nil, status.Errorf(
+				codes.PermissionDenied,
+				"user %s does not have access or action permision to the %s resource, action - %s",
+				authReq[0], authReq[1], authReq[2],
+			)
+		}
+
+		if !authResp.Exist {
+			toCreate = append(toCreate, authReq)
+		}
 	}
 
-	return s.gwClient.Sync(ctx, c)
+	sgroupsResp, err := s.gwClient.Sync(ctx, c)
+	if err == nil {
+		// TODO: add objs to groups in polices
+	}
+	return sgroupsResp, err
 }
 
 func (s SecGroupService) ListNetworks(
