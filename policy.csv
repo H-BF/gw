@@ -1,14 +1,12 @@
 p, alice, *, admin
 p, bob, bob-res, owner
 p, bob, *, client
+p, clare, clare-res, owner
 p, clare, *, client
-g, read-ref, read
-g, read-ref, reference
-g, admin, read-ref
+g, admin, read
 g, admin, edit
-g, owner, read-ref
+g, admin, reference
+g, owner, read
 g, owner, edit
+g, owner, reference
 g, client, read
-g2, bob-res, 
-g2, bob-res, sg-2
-g2, clare-res, sg-2

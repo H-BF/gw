@@ -11,6 +11,8 @@ type CasbinAuthProvider struct {
 	enforcer *casbin.Enforcer
 }
 
+var _ authprovider.AuthProvider = (*CasbinAuthProvider)(nil)
+
 const ( // available actions of a role model
 	ReadAction      = "read"
 	EditAction      = "edit"
@@ -22,6 +24,10 @@ const (
 	ownerRole = "owner"
 )
 
+const (
+	subGroupSuffix = "-res"
+)
+
 func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvider, error) {
 	enforcer, err := casbin.NewEnforcer(modelPath, policyPath)
 	if err != nil {
@@ -31,25 +37,37 @@ func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvi
 	return &CasbinAuthProvider{enforcer}, nil
 }
 
-func (c CasbinAuthProvider) CheckPermission(_ context.Context, sub, obj, act string) (bool, error) {
-	if _, err := c.addResourceToNamedGroup(sub, obj); err != nil {
-		return false, err
+func (c CasbinAuthProvider) Authorize(_ context.Context, sub, obj, act string) (bool, error) {
+	return c.enforcer.Enforce(sub, obj, act)
+}
+
+func (c CasbinAuthProvider) AuthorizeIfExist(_ context.Context, sub, obj, act string) (authprovider.AuthWithExistResp, error) {
+	if exists := c.enforcer.HasNamedGroupingPolicy("g2", sub+subGroupSuffix, obj); !exists {
+		// if `obj` not added to group resource should be authorized and added to group after succeeded request
+		return authprovider.AuthWithExistResp{
+			Exist:      false,
+			Authorized: true,
+		}, nil
 	}
 
-	return c.enforcer.Enforce(sub, obj, act)
+	authorized, err := c.enforcer.Enforce(sub, obj, act)
+	return authprovider.AuthWithExistResp{
+		Exist:      false,
+		Authorized: authorized,
+	}, err
 }
 
 func (c CasbinAuthProvider) addResourceToNamedGroup(userId, resourceName string) (bool, error) {
 	// for now, for each user who tries to create a new resource,
 	// we will select the user role
 	// todo: does it make sense t give admin the owner role???
-	if err := c.addRoleForUser(userId, "owner"); err != nil {
-		return false, err
-	}
+	//if err := c.addRoleForUser(userId, "owner"); err != nil {
+	//	return false, err
+	//}
 
 	// if the resource has already been created in the group,
 	// then a new entry will not be written.
-	isAdded, err := c.enforcer.AddNamedGroupingPolicy("g2", userId+"-res", resourceName)
+	isAdded, err := c.enforcer.AddNamedGroupingPolicy("g2", userId+subGroupSuffix, resourceName)
 	if err != nil {
 		return false, err
 	}
@@ -69,7 +87,7 @@ func (c CasbinAuthProvider) addRoleForUser(sub, role string) error {
 	}
 
 	if !hasRole {
-		if _, err = c.enforcer.AddPolicy(sub, sub+"-res", ownerRole); err != nil {
+		if _, err = c.enforcer.AddPolicy(sub, sub+subGroupSuffix, ownerRole); err != nil {
 			return err
 		}
 	}
