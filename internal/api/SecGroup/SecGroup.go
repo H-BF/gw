@@ -63,7 +63,7 @@ func (s SecGroupService) Sync(
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var toCreate RTuples
+	var objsToCreate []string
 
 	for _, authReq := range tt {
 		authResp, err := s.authPlugin.AuthorizeIfExist(ctx, authReq[0], authReq[1], authReq[2])
@@ -80,13 +80,13 @@ func (s SecGroupService) Sync(
 		}
 
 		if !authResp.Exist {
-			toCreate = append(toCreate, authReq)
+			objsToCreate = append(objsToCreate, authReq[1])
 		}
 	}
 
 	sgroupsResp, err := s.gwClient.Sync(ctx, c)
 	if err == nil {
-		// TODO: add objs to groups in polices
+		_ = s.authPlugin.AddResourcesToGroup(ctx, sub, objsToCreate...)
 	}
 	return sgroupsResp, err
 }
