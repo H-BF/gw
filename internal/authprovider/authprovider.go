@@ -46,7 +46,7 @@ func (c CasbinAuthProvider) Authorize(_ context.Context, sub, obj, act string) (
 
 // AuthorizeIfExist implements authprovider.AuthProvider
 func (c CasbinAuthProvider) AuthorizeIfExist(_ context.Context, sub, obj, act string) (authprovider.AuthWithExistResp, error) {
-	if exists := c.enforcer.HasNamedGroupingPolicy("g2", sub+subGroupSuffix, obj); !exists {
+	if exists := c.objExists(obj); !exists {
 		// if `obj` not added to group resource should be authorized and added to group after succeeded request
 		return authprovider.AuthWithExistResp{
 			Exist:      false,
@@ -69,4 +69,13 @@ func (c CasbinAuthProvider) AddResourcesToGroup(_ context.Context, sub string, o
 		}
 	}
 	return c.enforcer.SavePolicy()
+}
+
+func (c CasbinAuthProvider) objExists(obj string) bool {
+	const (
+		groupNameIndex = 0
+		objIndex       = 1
+	)
+	policy := c.enforcer.GetFilteredNamedGroupingPolicy(G2, objIndex, obj)
+	return len(policy) != 0
 }
