@@ -46,6 +46,8 @@ func (c CasbinAuthProvider) Authorize(_ context.Context, sub, obj, act string) (
 
 // AuthorizeIfExist implements authprovider.AuthProvider
 func (c CasbinAuthProvider) AuthorizeIfExist(_ context.Context, sub, obj, act string) (authprovider.AuthWithExistResp, error) {
+	// TODO: если админ пытается получить доступ к ресурсу то он его захватывает в файле полиси
+	// нужно пропустить админа без создания ресурса в полиси
 	if exists := c.objExists(obj); !exists {
 		// if `obj` not added to group resource should be authorized and added to group after succeeded request
 		return authprovider.AuthWithExistResp{
