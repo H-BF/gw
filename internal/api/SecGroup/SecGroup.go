@@ -17,6 +17,8 @@ import (
 const userIDHeaderKey = "userId"
 
 type SecGroupService struct {
+	sgroupsconnect.UnimplementedSecGroupServiceHandler
+
 	authPlugin authprovider.AuthProvider
 	gwClient   sgroupsconnect.SecGroupServiceClient
 }
@@ -151,28 +153,6 @@ func (s SecGroupService) GetRules(
 	return s.gwClient.GetRules(ctx, c)
 }
 
-func (s SecGroupService) SyncStatus(
-	ctx context.Context,
-	c *connect.Request[emptypb.Empty],
-) (*connect.Response[sgroups.SyncStatusResp], error) {
-	return nil, status.Error(codes.Unimplemented, "method SyncStatus not implemented")
-}
-
-func (s SecGroupService) SyncStatuses(
-	ctx context.Context,
-	c *connect.Request[emptypb.Empty],
-	c2 *connect.ServerStream[sgroups.SyncStatusResp],
-) error {
-	return status.Error(codes.Unimplemented, "method SyncStatuses not implemented")
-}
-
-func (s SecGroupService) GetSgSubnets(
-	ctx context.Context,
-	c *connect.Request[sgroups.GetSgSubnetsReq],
-) (*connect.Response[sgroups.GetSgSubnetsResp], error) {
-	return nil, status.Error(codes.Unimplemented, "method GetSgSubnets not implemented")
-}
-
 func (s SecGroupService) FindRules(
 	ctx context.Context,
 	c *connect.Request[sgroups.FindRulesReq],
@@ -213,20 +193,6 @@ func (s SecGroupService) FindFqdnRules(
 	return s.gwClient.FindFqdnRules(ctx, c)
 }
 
-func (s SecGroupService) FindSgIcmpRules(
-	ctx context.Context,
-	c *connect.Request[sgroups.FindSgIcmpRulesReq],
-) (*connect.Response[sgroups.SgIcmpRulesResp], error) {
-	return nil, status.Error(codes.Unimplemented, "method FindSgIcmpRules not implemented")
-}
-
-func (s SecGroupService) FindSgSgIcmpRules(
-	ctx context.Context,
-	c *connect.Request[sgroups.FindSgSgIcmpRulesReq],
-) (*connect.Response[sgroups.SgSgIcmpRulesResp], error) {
-	return nil, status.Error(codes.Unimplemented, "method FindSgSgIcmpRules not implemented")
-}
-
 func (s SecGroupService) FindCidrSgRules(
 	ctx context.Context,
 	c *connect.Request[sgroups.FindCidrSgRulesReq],
@@ -265,25 +231,4 @@ func (s SecGroupService) FindSgSgRules(
 	}
 
 	return s.gwClient.FindSgSgRules(ctx, c)
-}
-
-func (s SecGroupService) FindIESgSgIcmpRules(
-	ctx context.Context,
-	c *connect.Request[sgroups.FindIESgSgIcmpRulesReq],
-) (*connect.Response[sgroups.IESgSgIcmpRulesResp], error) {
-	return nil, status.Error(codes.Unimplemented, "method FindIESgSgIcmpRules not implemented")
-}
-
-func (s SecGroupService) FindCidrSgIcmpRules(
-	ctx context.Context,
-	c *connect.Request[sgroups.FindCidrSgIcmpRulesReq],
-) (*connect.Response[sgroups.CidrSgIcmpRulesResp], error) {
-	return nil, status.Error(codes.Unimplemented, "method FindCidrSgIcmpRules not implemented")
-}
-
-func (s SecGroupService) GetSecGroupForAddress(
-	ctx context.Context,
-	c *connect.Request[sgroups.GetSecGroupForAddressReq],
-) (*connect.Response[sgroups.SecGroup], error) {
-	return nil, status.Error(codes.Unimplemented, "method GetSecGroupForAddress not implemented")
 }
