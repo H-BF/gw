@@ -2,12 +2,8 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"github.com/H-BF/gw/internal/api/SecGroup/resnaming"
-	"strings"
-
 	ap "github.com/H-BF/gw/internal/authprovider"
-
 	"github.com/H-BF/protos/pkg/api/sgroups"
 )
 
@@ -36,37 +32,19 @@ func (t *RTuples) FromSync(req *sgroups.SyncReq, sub string) error {
 		}
 	case *sgroups.SyncReq_FqdnRules:
 		for _, rule := range req.GetFqdnRules().GetRules() {
-			*t = append(*t, [3]string{sub, ruleName(rule), act})
-			*t = append(*t, [3]string{sub, resnaming.FQNDRuleString(resnaming.FQDNRle{
-				Transport: rule.GetTransport().String(),
-				SgFrom:    rule.GetSgFrom(),
-				FqdnTo:    rule.GetFQDN(),
-			}), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), ap.ReferenceAction})
 		}
 	case *sgroups.SyncReq_SgRules:
 		for _, rule := range req.GetSgRules().GetRules() {
-			*t = append(*t, [3]string{sub, resnaming.SgRuleString(resnaming.SqRules{
-				Transport: rule.GetTransport().String(),
-				SgFrom:    rule.GetSgFrom(),
-				SgTo:      rule.GetSgTo(),
-			}), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), ap.ReferenceAction})
 		}
 	case *sgroups.SyncReq_CidrSgRules:
 		for _, rule := range req.GetCidrSgRules().GetRules() {
-			*t = append(*t, [3]string{sub, resnaming.CIDRRUleString(resnaming.CIDRRule{
-				Transport: rule.GetTransport().String(),
-				CIDR:      rule.GetCIDR(),
-				SgName:    rule.GetSG(),
-				Traffic:   rule.GetTraffic().String(),
-			}), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), ap.ReferenceAction})
 		}
 	case *sgroups.SyncReq_SgSgRules:
 		for _, rule := range req.GetSgSgRules().GetRules() {
-			*t = append(*t, [3]string{sub, resnaming.SgRuleString(resnaming.SqRules{
-				Transport: rule.GetTransport().String(),
-				SgFrom:    rule.GetSg(),
-				SgTo:      rule.GetSgLocal(),
-			}), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), ap.ReferenceAction})
 		}
 	default:
 		return errors.New("unsupported sync subject")
@@ -135,11 +113,4 @@ func extractAct(req *sgroups.SyncReq) (string, error) {
 	default:
 		return "", errUnsupportedSyncOp
 	}
-}
-
-// TODO: придумать способ получать имена для всех правил не городя кучу одинаковых функций
-func ruleName(rule *sgroups.FqdnRule) string {
-	return fmt.Sprintf("%s:sg(%s)fqdn(%s)",
-		strings.ToLower(rule.GetTransport().String()), rule.GetSgFrom(),
-		strings.ToLower(rule.GetFQDN()))
 }
