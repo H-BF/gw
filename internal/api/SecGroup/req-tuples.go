@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/H-BF/gw/internal/api/SecGroup/resnaming"
 	"strings"
 
 	ap "github.com/H-BF/gw/internal/authprovider"
@@ -36,24 +37,36 @@ func (t *RTuples) FromSync(req *sgroups.SyncReq, sub string) error {
 	case *sgroups.SyncReq_FqdnRules:
 		for _, rule := range req.GetFqdnRules().GetRules() {
 			*t = append(*t, [3]string{sub, ruleName(rule), act})
-			*t = append(*t, [3]string{sub, rule.GetSgFrom(), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.FQNDRuleString(resnaming.FQDNRle{
+				Transport: rule.GetTransport().String(),
+				SgFrom:    rule.GetSgFrom(),
+				FqdnTo:    rule.GetFQDN(),
+			}), ap.ReferenceAction})
 		}
 	case *sgroups.SyncReq_SgRules:
 		for _, rule := range req.GetSgRules().GetRules() {
-			// TODO: проверка прав по имени правила как у FQDN правил
-			*t = append(*t, [3]string{sub, rule.GetSgFrom(), ap.ReferenceAction})
-			*t = append(*t, [3]string{sub, rule.GetSgTo(), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.SgRuleString(resnaming.SqRules{
+				Transport: rule.GetTransport().String(),
+				SgFrom:    rule.GetSgFrom(),
+				SgTo:      rule.GetSgTo(),
+			}), ap.ReferenceAction})
 		}
 	case *sgroups.SyncReq_CidrSgRules:
 		for _, rule := range req.GetCidrSgRules().GetRules() {
-			// TODO: проверка прав по имени правила как у FQDN правил
-			*t = append(*t, [3]string{sub, rule.GetSG(), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.CIDRRUleString(resnaming.CIDRRule{
+				Transport: rule.GetTransport().String(),
+				CIDR:      rule.GetCIDR(),
+				SgName:    rule.GetSG(),
+				Traffic:   rule.GetTraffic().String(),
+			}), ap.ReferenceAction})
 		}
 	case *sgroups.SyncReq_SgSgRules:
 		for _, rule := range req.GetSgSgRules().GetRules() {
-			// TODO: проверка прав по имени правила как у FQDN правил
-			*t = append(*t, [3]string{sub, rule.GetSgLocal(), ap.ReferenceAction})
-			*t = append(*t, [3]string{sub, rule.GetSg(), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, resnaming.SgRuleString(resnaming.SqRules{
+				Transport: rule.GetTransport().String(),
+				SgFrom:    rule.GetSg(),
+				SgTo:      rule.GetSgLocal(),
+			}), ap.ReferenceAction})
 		}
 	default:
 		return errors.New("unsupported sync subject")
