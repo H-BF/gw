@@ -2,6 +2,7 @@ package authprovider
 
 import (
 	"context"
+	"fmt"
 	"github.com/H-BF/gw/pkg/authprovider"
 
 	"github.com/casbin/casbin/v2"
@@ -41,11 +42,20 @@ func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvi
 
 // Authorize implements authprovider.AuthProvider
 func (c CasbinAuthProvider) Authorize(_ context.Context, sub, obj, act string) (bool, error) {
+	if !c.subExists(sub) {
+		return false, fmt.Errorf("you cannot add a resource to an existing user - %s", sub)
+	}
+
 	return c.enforcer.Enforce(sub, obj, act)
 }
 
 // AuthorizeIfExist implements authprovider.AuthProvider
-func (c CasbinAuthProvider) AuthorizeIfExist(_ context.Context, sub, obj, act string) (authprovider.AuthWithExistResp, error) {
+func (c CasbinAuthProvider) AuthorizeIfExist(ctx context.Context, sub, obj, act string) (authprovider.AuthWithExistResp, error) {
+	if !c.subExists(sub) {
+		return authprovider.AuthWithExistResp{},
+			fmt.Errorf("you cannot add a resource to an existing user - %s", sub)
+	}
+
 	if exists := c.objExists(obj); !exists {
 		// if `obj` not added to group resource should be authorized and added to group after succeeded request
 		return authprovider.AuthWithExistResp{
@@ -54,7 +64,7 @@ func (c CasbinAuthProvider) AuthorizeIfExist(_ context.Context, sub, obj, act st
 		}, nil
 	}
 
-	authorized, err := c.enforcer.Enforce(sub, obj, act)
+	authorized, err := c.Authorize(ctx, sub, obj, act)
 	return authprovider.AuthWithExistResp{
 		Exist:      false,
 		Authorized: authorized,
@@ -63,6 +73,10 @@ func (c CasbinAuthProvider) AuthorizeIfExist(_ context.Context, sub, obj, act st
 
 // AddResourcesToGroup implements authprovider.AuthProvider
 func (c CasbinAuthProvider) AddResourcesToGroup(_ context.Context, sub string, objs ...string) error {
+	if !c.subExists(sub) {
+		return fmt.Errorf("you cannot add a resource to an existing user - %s", sub)
+	}
+
 	for _, obj := range objs {
 		if _, err := c.enforcer.AddNamedGroupingPolicy(G2, sub+subGroupSuffix, obj); err != nil {
 			return err
@@ -78,4 +92,9 @@ func (c CasbinAuthProvider) objExists(obj string) bool {
 	)
 	policy := c.enforcer.GetFilteredNamedGroupingPolicy(G2, objIndex, obj)
 	return len(policy) != 0
+}
+
+func (c CasbinAuthProvider) subExists(sub string) bool {
+	policy := c.enforcer.GetFilteredPolicy(0, sub)
+	return len(policy) >= 1
 }
