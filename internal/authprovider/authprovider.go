@@ -42,20 +42,11 @@ func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvi
 
 // Authorize implements authprovider.AuthProvider
 func (c CasbinAuthProvider) Authorize(_ context.Context, sub, obj, act string) (bool, error) {
-	if !c.subExists(sub) {
-		return false, fmt.Errorf("you cannot add a resource to an existing user - %s", sub)
-	}
-
 	return c.enforcer.Enforce(sub, obj, act)
 }
 
 // AuthorizeIfExist implements authprovider.AuthProvider
 func (c CasbinAuthProvider) AuthorizeIfExist(ctx context.Context, sub, obj, act string) (authprovider.AuthWithExistResp, error) {
-	if !c.subExists(sub) {
-		return authprovider.AuthWithExistResp{},
-			fmt.Errorf("you cannot add a resource to an existing user - %s", sub)
-	}
-
 	if exists := c.objExists(obj); !exists {
 		// if `obj` not added to group resource should be authorized and added to group after succeeded request
 		return authprovider.AuthWithExistResp{
