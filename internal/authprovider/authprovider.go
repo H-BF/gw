@@ -42,6 +42,11 @@ func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvi
 
 // Authorize implements authprovider.AuthProvider
 func (c CasbinAuthProvider) Authorize(_ context.Context, sub, obj, act string) (bool, error) {
+	// todo: make a more beautiful solution so that there is no coping code
+	if !c.subExists(sub) {
+		return false, fmt.Errorf("you cannot add a resource to an existing user - %s", sub)
+	}
+
 	return c.enforcer.Enforce(sub, obj, act)
 }
 
