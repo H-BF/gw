@@ -1,12 +1,16 @@
 package httpserver
 
 import (
+	"context"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"log"
 	"net/http"
 	"time"
 
 	api "github.com/H-BF/gw/internal/api/SecGroup"
 	"github.com/H-BF/gw/internal/authprovider"
+	gwconfig "github.com/H-BF/gw/internal/gw-config"
 
 	"github.com/H-BF/protos/pkg/api/sgroups/sgroupsconnect"
 )
@@ -22,9 +26,17 @@ func ListenAndServe(addr string) error {
 		api.NewSecGroupService(casbinAuthProvider),
 	))
 
+	var handler http.Handler
+	if gwconfig.ServerTLSDisabled.MustValue(context.Background()) {
+		handler = h2c.NewHandler(mux, &http2.Server{})
+	} else {
+		handler = mux
+		// TODO: enable tls for server
+	}
+
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           mux,
+		Handler:           handler,
 		ReadTimeout:       5 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		ReadHeaderTimeout: 3 * time.Second,

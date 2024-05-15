@@ -1,13 +1,16 @@
 package SecGroup
 
 import (
+	"context"
 	"crypto/tls"
+	"golang.org/x/net/http2"
 	"net"
 	"net/http"
 
+	gwconfig "github.com/H-BF/gw/internal/gw-config"
+
 	"connectrpc.com/connect"
 	"github.com/H-BF/protos/pkg/api/sgroups/sgroupsconnect"
-	"golang.org/x/net/http2"
 )
 
 type secGroupClient struct {
@@ -15,14 +18,21 @@ type secGroupClient struct {
 }
 
 func NewClient(addr string) sgroupsconnect.SecGroupServiceClient {
-	// client for transferring data via http2 to sgroups grpc server
-	httpClient := &http.Client{
-		Transport: &http2.Transport{
+	transport := http.DefaultTransport
+
+	if gwconfig.ExternalApiSgroupsTLSDisabled.MustValue(context.Background()) {
+		transport = &http2.Transport{
 			AllowHTTP: true,
 			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
 				return net.Dial(network, addr)
 			},
-		},
+		}
+	} else {
+		// TODO: enable tls for transport/http-client
+	}
+
+	httpClient := &http.Client{
+		Transport: transport,
 	}
 
 	client := sgroupsconnect.NewSecGroupServiceClient(
