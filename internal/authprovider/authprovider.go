@@ -3,6 +3,7 @@ package authprovider
 import (
 	"context"
 	"fmt"
+
 	"github.com/H-BF/gw/pkg/authprovider"
 
 	"github.com/casbin/casbin/v2"
@@ -32,8 +33,23 @@ const (
 )
 
 func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvider, error) {
-	enforcer, err := casbin.NewEnforcer(modelPath, policyPath)
+	pgAdapter, err := newPGAdapter()
 	if err != nil {
+		return nil, err
+	}
+
+	enforcer, err := casbin.NewEnforcer(modelPath, pgAdapter)
+	if err != nil {
+		return nil, err
+	}
+
+	enforcer.EnableAutoSave(true)
+
+	if err := enforcer.LoadPolicy(); err != nil {
+		return nil, err
+	}
+
+	if err := enforcer.SavePolicy(); err != nil {
 		return nil, err
 	}
 
