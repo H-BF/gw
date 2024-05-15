@@ -76,6 +76,15 @@ func (c CasbinAuthProvider) AddResourcesToGroup(_ context.Context, sub string, o
 	return c.enforcer.SavePolicy()
 }
 
+// RemoveResourceFromGroup implements authprovider.RemoveResourceFromGroup
+func (c CasbinAuthProvider) RemoveResourceFromGroup(_ context.Context, sub string, obj string) error {
+	if _, err := c.enforcer.RemoveNamedGroupingPolicy(G2, sub+subGroupSuffix, obj); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c CasbinAuthProvider) objExists(obj string) bool {
 	const (
 		groupNameIndex = 0

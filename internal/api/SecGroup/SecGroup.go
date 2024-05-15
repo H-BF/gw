@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log"
 
 	"github.com/H-BF/gw/internal/client/SecGroup"
 	"github.com/H-BF/gw/pkg/authprovider"
@@ -65,7 +66,9 @@ func (s SecGroupService) Sync(
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var objsToCreate []string
+	var (
+		objsToCreate []string
+	)
 
 	for _, authReq := range tt {
 		authResp, err := s.authPlugin.AuthorizeIfExist(ctx, authReq[0], authReq[1], authReq[2])
@@ -81,6 +84,14 @@ func (s SecGroupService) Sync(
 			)
 		}
 
+		if c.Msg.SyncOp == sgroups.SyncReq_Delete {
+			// todo: handle error
+			if err = s.authPlugin.RemoveResourceFromGroup(ctx, authReq[0], authReq[1]); err != nil {
+				log.Println(err)
+			}
+			continue
+		}
+
 		if !authResp.Exist {
 			objsToCreate = append(objsToCreate, authReq[1])
 		}
@@ -88,8 +99,12 @@ func (s SecGroupService) Sync(
 
 	sgroupsResp, err := s.gwClient.Sync(ctx, c)
 	if err == nil {
-		_ = s.authPlugin.AddResourcesToGroup(ctx, sub, objsToCreate...)
+		// todo: handle error
+		if err = s.authPlugin.AddResourcesToGroup(ctx, sub, objsToCreate...); err != nil {
+			log.Println(err)
+		}
 	}
+
 	return sgroupsResp, err
 }
 
