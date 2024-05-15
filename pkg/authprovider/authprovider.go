@@ -19,6 +19,6 @@ type AuthProvider interface {
 	// AddResourcesToGroup adds `objs` to resource group of `sub`
 	AddResourcesToGroup(ctx context.Context, sub string, objs ...string) error
 
-	// RemoveResourceFromGroup remove obj on resource group of `sub`
-	RemoveResourceFromGroup(ctx context.Context, sub string, obj string) error
+	// RemoveResourcesFromGroup remove objs on resource group of `sub`
+	RemoveResourcesFromGroup(ctx context.Context, sub string, objs ...string) error
 }

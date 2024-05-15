@@ -68,6 +68,7 @@ func (s SecGroupService) Sync(
 
 	var (
 		objsToCreate []string
+		objsToDelete []string
 	)
 
 	for _, authReq := range tt {
@@ -85,10 +86,7 @@ func (s SecGroupService) Sync(
 		}
 
 		if c.Msg.SyncOp == sgroups.SyncReq_Delete {
-			// todo: handle error
-			if err = s.authPlugin.RemoveResourceFromGroup(ctx, authReq[0], authReq[1]); err != nil {
-				log.Println(err)
-			}
+			objsToDelete = append(objsToDelete, authReq[1])
 			continue
 		}
 
@@ -100,8 +98,17 @@ func (s SecGroupService) Sync(
 	sgroupsResp, err := s.gwClient.Sync(ctx, c)
 	if err == nil {
 		// todo: handle error
-		if err = s.authPlugin.AddResourcesToGroup(ctx, sub, objsToCreate...); err != nil {
-			log.Println(err)
+		if c.Msg.SyncOp == sgroups.SyncReq_Delete {
+			if err = s.authPlugin.RemoveResourcesFromGroup(ctx, sub, objsToDelete...); err != nil {
+				log.Println(err)
+			}
+		}
+
+		// todo: handle error
+		if len(objsToCreate) > 0 {
+			if err = s.authPlugin.AddResourcesToGroup(ctx, sub, objsToCreate...); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 
