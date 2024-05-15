@@ -66,10 +66,7 @@ func (s SecGroupService) Sync(
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var (
-		objsToCreate []string
-		objsToDelete []string
-	)
+	var objsToCreate []string
 
 	for _, authReq := range tt {
 		authResp, err := s.authPlugin.AuthorizeIfExist(ctx, authReq[0], authReq[1], authReq[2])
@@ -85,11 +82,6 @@ func (s SecGroupService) Sync(
 			)
 		}
 
-		if c.Msg.SyncOp == sgroups.SyncReq_Delete {
-			objsToDelete = append(objsToDelete, authReq[1])
-			continue
-		}
-
 		if !authResp.Exist {
 			objsToCreate = append(objsToCreate, authReq[1])
 		}
@@ -97,15 +89,15 @@ func (s SecGroupService) Sync(
 
 	sgroupsResp, err := s.gwClient.Sync(ctx, c)
 	if err == nil {
-		// todo: handle error
-		if c.Msg.SyncOp == sgroups.SyncReq_Delete {
-			if err = s.authPlugin.RemoveResourcesFromGroup(ctx, sub, objsToDelete...); err != nil {
+		// TODO: на подумать - как можно сделать изменения в группировках используя одну функцию?
+		switch c.Msg.SyncOp {
+		case sgroups.SyncReq_Delete:
+			// todo: handle error
+			if err = s.authPlugin.RemoveResourcesFromGroup(ctx, sub, tt.GetObjs()...); err != nil {
 				log.Println(err)
 			}
-		}
-
-		// todo: handle error
-		if len(objsToCreate) > 0 {
+		case sgroups.SyncReq_Upsert:
+			// todo: handle error
 			if err = s.authPlugin.AddResourcesToGroup(ctx, sub, objsToCreate...); err != nil {
 				log.Println(err)
 			}

@@ -111,6 +111,13 @@ func (t *RTuples) FromFindSgSgRules(req *sgroups.FindSgSgRulesReq, sub string) e
 	return nil
 }
 
+func (t *RTuples) GetObjs() (res []string) {
+	for _, tuple := range *t {
+		res = append(res, tuple[1])
+	}
+	return res
+}
+
 func extractAct(req *sgroups.SyncReq) (string, error) {
 	switch req.GetSyncOp() {
 	case sgroups.SyncReq_Upsert, sgroups.SyncReq_Delete:
