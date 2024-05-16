@@ -51,18 +51,20 @@ func (c CasbinAuthProvider) Authorize(_ context.Context, sub, obj, act string) (
 }
 
 // AuthorizeIfExist implements authprovider.AuthProvider
-func (c CasbinAuthProvider) AuthorizeIfExist(ctx context.Context, sub, obj, act string) (authprovider.AuthWithExistResp, error) {
-	if exists := c.objExists(obj); !exists {
-		// if `obj` not added to group resource should be authorized and added to group after succeeded request
-		return authprovider.AuthWithExistResp{
-			Exist:      false,
-			Authorized: true,
-		}, nil
+func (c CasbinAuthProvider) AuthorizeIfExist(_ context.Context, sub, obj, act string) (authprovider.AuthWithExistResp, error) {
+	authorized, reasons, err := c.enforcer.EnforceEx(sub, obj, act)
+	if !authorized && len(reasons) == 0 { // `obj` is new for casbin
+		if exists := c.objExists(obj); !exists {
+			// if `obj` not added to group resource should be authorized and added to group after succeeded request
+			return authprovider.AuthWithExistResp{
+				Exist:      false,
+				Authorized: true,
+			}, nil
+		}
 	}
 
-	authorized, err := c.Authorize(ctx, sub, obj, act)
 	return authprovider.AuthWithExistResp{
-		Exist:      false,
+		Exist:      true,
 		Authorized: authorized,
 	}, err
 }
