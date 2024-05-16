@@ -3,6 +3,9 @@ package authprovider
 import (
 	"context"
 	"fmt"
+	"github.com/casbin/casbin/v2/persist"
+	fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
+	"os"
 
 	"github.com/H-BF/gw/pkg/authprovider"
 
@@ -32,13 +35,25 @@ const (
 	G2 = "g2"
 )
 
-func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvider, error) {
-	pgAdapter, err := newPGAdapter()
-	if err != nil {
-		return nil, err
+const (
+	fileAdapter = "file"
+	pgAdapter   = "pg"
+)
+
+func NewCasbinAuthProvider(modelPath string) (provider authprovider.AuthProvider, err error) {
+	adapterType := os.Getenv("ADAPTER")
+	var adapter persist.Adapter
+
+	switch adapterType {
+	case fileAdapter:
+		adapter = fileadapter.NewAdapter("policy.csv")
+	case pgAdapter:
+		adapter, err = newPGAdapter()
+	default:
+		adapter = fileadapter.NewAdapter("policy.csv")
 	}
 
-	enforcer, err := casbin.NewEnforcer(modelPath, pgAdapter)
+	enforcer, err := casbin.NewEnforcer(modelPath, adapter)
 	if err != nil {
 		return nil, err
 	}
