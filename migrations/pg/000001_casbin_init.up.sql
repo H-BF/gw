@@ -1,8 +1,8 @@
-create schema if not exists casbin;
+create extension if not exists "uuid-ossp";;
 
-create table if not exists casbin.casbin_rule
+create table if not exists casbin_rule
 (
-    id serial primary key,
+    id uuid default gen_random_uuid() primary key,
     ptype text not null,
     v0 text not null,
     v1 text not null,
@@ -12,12 +12,12 @@ create table if not exists casbin.casbin_rule
     v5 text
 );
 
-create index if not exists prtype_idx on casbin.casbin_rule(ptype);
-create index if not exists v0_idx on casbin.casbin_rule(v0);
-create index if not exists v1_idx on casbin.casbin_rule(v1);
-create index if not exists v2_idx on casbin.casbin_rule(v2);
+create index if not exists prtype_idx on casbin_rule(ptype);
+create index if not exists v0_idx on casbin_rule(v0);
+create index if not exists v1_idx on casbin_rule(v1);
+create index if not exists v2_idx on casbin_rule(v2);
 
-insert into casbin.casbin_rule (ptype, v0, v1, v2) values
+insert into casbin_rule (ptype, v0, v1, v2) values
     ('p', 'alice', '*', 'admin'),
     ('p', 'bob', 'bob-res', 'owner'),
     ('p', 'bob', '*', 'client'),

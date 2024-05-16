@@ -49,10 +49,6 @@ func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvi
 		return nil, err
 	}
 
-	if err := enforcer.SavePolicy(); err != nil {
-		return nil, err
-	}
-
 	return &CasbinAuthProvider{enforcer}, nil
 }
 
