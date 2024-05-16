@@ -58,6 +58,12 @@ func (t *RTuples) FromSync(req *sgroups.SyncReq, sub string) error {
 }
 
 func (t *RTuples) FromListNetworks(req *sgroups.ListNetworksReq, sub string) error {
+	if len(req.GetNeteworkNames()) == 0 {
+		// TODO: если пришел запрос с пустым массивом имен нетворков то сгрупс отдаст все существующие нетворки
+		// поэтому нужно проверить у пользователя доступ на чтение нетворков
+		// то же самое для всех List* и Find* запросов - их тоже нужно переделать
+		*t = append(*t, [3]string{sub, "all-networks", ap.ReadAction})
+	}
 	for _, obj := range req.GetNeteworkNames() {
 		*t = append(*t, [3]string{sub, obj, ap.ReadAction})
 	}

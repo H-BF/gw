@@ -44,8 +44,10 @@ func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvi
 func (c CasbinAuthProvider) Authorize(_ context.Context, sub, obj, act string) (bool, error) {
 	// todo: make a more beautiful solution so that there is no coping code
 	if !c.subExists(sub) {
-		return false, fmt.Errorf("you cannot add a resource to an existing user - %s", sub)
+		return false, fmt.Errorf("you cannot add a resource to an existing user - %s", sub) // сообщение в ошибке сбивает с толку - не делай так
 	}
+	// TODO: ^^^^^^ нам не нужно самостоятельно лезть в касбин для проверки авторизации - это сделает enforcer.Enforce
+	// УДАЛИТЬ!!!
 
 	return c.enforcer.Enforce(sub, obj, act)
 }
@@ -103,6 +105,7 @@ func (c CasbinAuthProvider) objExists(obj string) bool {
 	return len(policy) != 0
 }
 
+// TODO: удалить
 func (c CasbinAuthProvider) subExists(sub string) bool {
 	policy := c.enforcer.GetFilteredPolicy(0, sub)
 	return len(policy) >= 1
