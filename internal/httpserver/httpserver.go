@@ -12,7 +12,7 @@ import (
 )
 
 func ListenAndServe(addr string) error {
-	casbinAuthProvider, err := authprovider.NewCasbinAuthProvider("model.conf", "policy.csv")
+	casbinAuthProvider, err := authprovider.NewCasbinAuthProvider("model.conf")
 	if err != nil {
 		log.Fatal(err)
 	}
