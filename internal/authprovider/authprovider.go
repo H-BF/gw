@@ -3,6 +3,7 @@ package authprovider
 import (
 	"context"
 	"fmt"
+
 	"github.com/H-BF/gw/pkg/authprovider"
 
 	"github.com/casbin/casbin/v2"

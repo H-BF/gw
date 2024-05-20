@@ -2,8 +2,10 @@ package api
 
 import (
 	"errors"
+
 	"github.com/H-BF/gw/internal/api/SecGroup/resnaming"
 	ap "github.com/H-BF/gw/internal/authprovider"
+
 	"github.com/H-BF/protos/pkg/api/sgroups"
 )
 
@@ -122,13 +124,4 @@ func (t *RTuples) GetObjs() (res []string) {
 		res = append(res, tuple[1])
 	}
 	return res
-}
-
-func extractAct(req *sgroups.SyncReq) (string, error) {
-	switch req.GetSyncOp() {
-	case sgroups.SyncReq_Upsert, sgroups.SyncReq_Delete:
-		return ap.EditAction, nil
-	default:
-		return "", errUnsupportedSyncOp
-	}
 }

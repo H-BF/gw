@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/H-BF/gw/internal/httpserver"
 	"log"
+
+	"github.com/H-BF/gw/internal/httpserver"
 )
 
 func main() {

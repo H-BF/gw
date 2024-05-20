@@ -8,40 +8,36 @@ import (
 )
 
 func RuleName(rule interface{}) string {
-	switch rule.(type) {
+	switch rule := rule.(type) {
 	case *sgroups.FqdnRule:
-		fqdnRule := rule.(*sgroups.FqdnRule)
 		return fmt.Sprintf(
 			"%s:sg(%s)fqdn(%s)",
-			strings.ToLower(fqdnRule.GetTransport().String()),
-			strings.ToLower(fqdnRule.GetSgFrom()),
-			strings.ToLower(fqdnRule.GetFQDN()),
+			strings.ToLower(rule.GetTransport().String()),
+			strings.ToLower(rule.GetSgFrom()),
+			strings.ToLower(rule.GetFQDN()),
 		)
 	case *sgroups.Rule:
-		sgRule := rule.(*sgroups.Rule)
 		return fmt.Sprintf(
 			"%s:sg(%s)sg(%s)",
-			strings.ToLower(sgRule.GetTransport().String()),
-			strings.ToLower(sgRule.GetSgFrom()),
-			strings.ToLower(sgRule.GetSgTo()),
+			strings.ToLower(rule.GetTransport().String()),
+			strings.ToLower(rule.GetSgFrom()),
+			strings.ToLower(rule.GetSgTo()),
 		)
 	case *sgroups.CidrSgRule:
-		cidrRule := rule.(*sgroups.CidrSgRule)
 		return fmt.Sprintf(
 			"%s:cidr(%s)sg(%s)%s",
-			strings.ToLower(cidrRule.GetTransport().String()),
-			strings.ToLower(cidrRule.GetCIDR()),
-			strings.ToLower(cidrRule.GetSG()),
-			strings.ToLower(cidrRule.GetTraffic().String()),
+			strings.ToLower(rule.GetTransport().String()),
+			strings.ToLower(rule.GetCIDR()),
+			strings.ToLower(rule.GetSG()),
+			strings.ToLower(rule.GetTraffic().String()),
 		)
 	case *sgroups.SgSgRule:
-		sgSgRule := rule.(*sgroups.SgSgRule)
 		return fmt.Sprintf(
 			"%s:sg-local(%s)sg(%s)%s",
-			strings.ToLower(sgSgRule.GetTransport().String()),
-			strings.ToLower(sgSgRule.GetSgLocal()),
-			strings.ToLower(sgSgRule.GetSg()),
-			strings.ToLower(sgSgRule.GetTraffic().String()),
+			strings.ToLower(rule.GetTransport().String()),
+			strings.ToLower(rule.GetSgLocal()),
+			strings.ToLower(rule.GetSg()),
+			strings.ToLower(rule.GetTraffic().String()),
 		)
 	default:
 		return ""

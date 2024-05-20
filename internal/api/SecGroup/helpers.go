@@ -1,6 +1,11 @@
 package api
 
 import (
+	"errors"
+	"strings"
+
+	ap "github.com/H-BF/gw/internal/authprovider"
+
 	"connectrpc.com/connect"
 	"github.com/H-BF/protos/pkg/api/sgroups"
 )
@@ -11,5 +16,19 @@ type SecGroupReq interface {
 }
 
 func extractSub[T SecGroupReq](c *connect.Request[T]) (string, error) {
-	return c.Header().Get(userIDHeaderKey), nil
+	userId := c.Header().Get(userIDHeaderKey)
+	if strings.TrimSpace(userId) == "" {
+		return "", errors.New("user id connot be empty")
+	}
+
+	return userId, nil
+}
+
+func extractAct(req *sgroups.SyncReq) (string, error) {
+	switch req.GetSyncOp() {
+	case sgroups.SyncReq_Upsert, sgroups.SyncReq_Delete:
+		return ap.EditAction, nil
+	default:
+		return "", errUnsupportedSyncOp
+	}
 }
