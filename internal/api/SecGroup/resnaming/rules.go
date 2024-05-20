@@ -38,10 +38,10 @@ func RuleName(rule interface{}) string {
 		sgSgRule := rule.(*sgroups.SgSgRule)
 		return fmt.Sprintf(
 			"%s:sg-local(%s)sg(%s)%s",
-			sgSgRule.GetTransport().String(),
-			sgSgRule.GetSgLocal(),
-			sgSgRule.GetSg(),
-			sgSgRule.GetTraffic().String(),
+			strings.ToLower(sgSgRule.GetTransport().String()),
+			strings.ToLower(sgSgRule.GetSgLocal()),
+			strings.ToLower(sgSgRule.GetSg()),
+			strings.ToLower(sgSgRule.GetTraffic().String()),
 		)
 	default:
 		return ""
