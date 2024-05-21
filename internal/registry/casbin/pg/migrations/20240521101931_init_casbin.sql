@@ -1,3 +1,8 @@
+-- +goose Up
+-- +goose StatementBegin
+SELECT 'up SQL query';
+-- +goose StatementEnd
+
 create extension if not exists "uuid-ossp";;
 
 create table if not exists casbin_rule
@@ -30,3 +35,15 @@ insert into casbin_rule (ptype, v0, v1, v2) values
     ('g', 'owner', 'edit', ''),
     ('g', 'owner', 'reference', ''),
     ('g', 'client', 'read', '');
+
+-- +goose Down
+-- +goose StatementBegin
+SELECT 'down SQL query';
+-- +goose StatementEnd
+
+drop index if exists prtype_index;
+drop index if exists v0_idx;
+drop index if exists v1_idx;
+drop index if exists v2_idx;
+
+drop table if exists casbin_rule;

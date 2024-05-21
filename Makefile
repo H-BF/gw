@@ -40,15 +40,26 @@ up-pg: ## up postgres docker image for casbin adapter
 		-d postgres && \
 	ehco postgres listen on 127.0.0.1:$(PG_PORT)
 
-PG_URI ?=
+.PHONY: .install-goose
+.install-goose: ## install goose migrate tool
+ifeq ($(filter $(GOOSE_CUR_VERSION), $(GOOSE_LATEST_VERSION)),)
+	@echo installing \'goose\' util... && \
+	$(GO_BIN) install github.com/pressly/goose/v3/cmd/goose@latest
+else
+	@echo >/dev/null
+endif
+
+PG_MIGRATIONS?=$(CURDIR)/internal/registry/casbin/pg/migrations
+PG_URI?=
 .PHONY: casbin-migrate-up
-casbin-migrate-up: ## up migrations for casbin adapter
-	@echo up casbin migration && \
-	$(MIGRATE_BIN) \
-		-database=$(PG_URI) \
-		-path $(CURDIR)/migrations/pg \
-		up && \
-	echo migratation up
+casbin-migrate-up: ## run Casbin Postgres migrations
+ifneq ($(PG_URI),)
+	@$(MAKE) .install-goose && \
+	cd $(PG_MIGRATIONS) && \
+	goose -table=casbin postgres $(PG_URI) up
+else
+	$(error need define PG_URI environment variable)
+endif	
 
 .PHONY: lint
 lint: ## run full lint
