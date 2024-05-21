@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	ap "github.com/H-BF/gw/internal/authprovider"
+	"github.com/H-BF/gw/internal/authprovider/consts"
 
 	"connectrpc.com/connect"
 	"github.com/H-BF/protos/pkg/api/sgroups"
@@ -27,7 +27,7 @@ func extractSub[T SecGroupReq](c *connect.Request[T]) (string, error) {
 func extractAct(req *sgroups.SyncReq) (string, error) {
 	switch req.GetSyncOp() {
 	case sgroups.SyncReq_Upsert, sgroups.SyncReq_Delete:
-		return ap.EditAction, nil
+		return consts.EditAction, nil
 	default:
 		return "", errUnsupportedSyncOp
 	}

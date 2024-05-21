@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/H-BF/gw/internal/api/SecGroup/resnaming"
-	ap "github.com/H-BF/gw/internal/authprovider"
+	"github.com/H-BF/gw/internal/authprovider/consts"
 
 	"github.com/H-BF/protos/pkg/api/sgroups"
 )
@@ -35,23 +35,23 @@ func (t *RTuples) FromSync(req *sgroups.SyncReq, sub string) error {
 	case *sgroups.SyncReq_FqdnRules:
 		for _, rule := range req.GetFqdnRules().GetRules() {
 			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), act})
-			*t = append(*t, [3]string{sub, rule.GetSgFrom(), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, rule.GetSgFrom(), consts.ReferenceAction})
 		}
 	case *sgroups.SyncReq_SgRules:
 		for _, rule := range req.GetSgRules().GetRules() {
 			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), act})
-			*t = append(*t, [3]string{sub, rule.GetSgFrom(), ap.ReferenceAction})
-			*t = append(*t, [3]string{sub, rule.GetSgTo(), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, rule.GetSgFrom(), consts.ReferenceAction})
+			*t = append(*t, [3]string{sub, rule.GetSgTo(), consts.ReferenceAction})
 		}
 	case *sgroups.SyncReq_CidrSgRules:
 		for _, rule := range req.GetCidrSgRules().GetRules() {
 			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), act})
-			*t = append(*t, [3]string{sub, rule.GetSG(), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, rule.GetSG(), consts.ReferenceAction})
 		}
 	case *sgroups.SyncReq_SgSgRules:
 		for _, rule := range req.GetSgSgRules().GetRules() {
 			*t = append(*t, [3]string{sub, resnaming.RuleName(rule), act})
-			*t = append(*t, [3]string{sub, rule.GetSgLocal(), ap.ReferenceAction})
+			*t = append(*t, [3]string{sub, rule.GetSgLocal(), consts.ReferenceAction})
 		}
 	default:
 		return errors.New("unsupported sync subject")
@@ -64,57 +64,57 @@ func (t *RTuples) FromListNetworks(req *sgroups.ListNetworksReq, sub string) err
 		// TODO: если пришел запрос с пустым массивом имен нетворков то сгрупс отдаст все существующие нетворки
 		// поэтому нужно проверить у пользователя доступ на чтение нетворков
 		// то же самое для всех List* и Find* запросов - их тоже нужно переделать
-		*t = append(*t, [3]string{sub, "all-networks", ap.ReadAction})
+		*t = append(*t, [3]string{sub, "all-networks", consts.ReadAction})
 	}
 	for _, obj := range req.GetNeteworkNames() {
-		*t = append(*t, [3]string{sub, obj, ap.ReadAction})
+		*t = append(*t, [3]string{sub, obj, consts.ReadAction})
 	}
 	return nil
 }
 
 func (t *RTuples) FromListSecurityGroups(req *sgroups.ListSecurityGroupsReq, sub string) error {
 	for _, obj := range req.GetSgNames() {
-		*t = append(*t, [3]string{sub, obj, ap.ReadAction})
+		*t = append(*t, [3]string{sub, obj, consts.ReadAction})
 	}
 	return nil
 }
 
 func (t *RTuples) FromGetRules(req *sgroups.GetRulesReq, sub string) error {
-	*t = append(*t, [3]string{sub, req.GetSgFrom(), ap.ReadAction})
-	*t = append(*t, [3]string{sub, req.GetSgTo(), ap.ReadAction})
+	*t = append(*t, [3]string{sub, req.GetSgFrom(), consts.ReadAction})
+	*t = append(*t, [3]string{sub, req.GetSgTo(), consts.ReadAction})
 	return nil
 }
 
 func (t *RTuples) FromFindRules(req *sgroups.FindRulesReq, sub string) error {
 	for _, obj := range req.GetSgFrom() {
-		*t = append(*t, [3]string{sub, obj, ap.ReadAction})
+		*t = append(*t, [3]string{sub, obj, consts.ReadAction})
 	}
 	for _, obj := range req.GetSgTo() {
-		*t = append(*t, [3]string{sub, obj, ap.ReadAction})
+		*t = append(*t, [3]string{sub, obj, consts.ReadAction})
 	}
 	return nil
 }
 
 func (t *RTuples) FromFindFqdnRules(req *sgroups.FindFqdnRulesReq, sub string) error {
 	for _, obj := range req.GetSgFrom() {
-		*t = append(*t, [3]string{sub, obj, ap.ReadAction})
+		*t = append(*t, [3]string{sub, obj, consts.ReadAction})
 	}
 	return nil
 }
 
 func (t *RTuples) FromFindCidrSgRules(req *sgroups.FindCidrSgRulesReq, sub string) error {
 	for _, obj := range req.GetSg() {
-		*t = append(*t, [3]string{sub, obj, ap.ReadAction})
+		*t = append(*t, [3]string{sub, obj, consts.ReadAction})
 	}
 	return nil
 }
 
 func (t *RTuples) FromFindSgSgRules(req *sgroups.FindSgSgRulesReq, sub string) error {
 	for _, obj := range req.GetSgLocal() {
-		*t = append(*t, [3]string{sub, obj, ap.ReadAction})
+		*t = append(*t, [3]string{sub, obj, consts.ReadAction})
 	}
 	for _, obj := range req.GetSg() {
-		*t = append(*t, [3]string{sub, obj, ap.ReadAction})
+		*t = append(*t, [3]string{sub, obj, consts.ReadAction})
 	}
 	return nil
 }

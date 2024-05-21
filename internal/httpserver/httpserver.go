@@ -12,14 +12,14 @@ import (
 )
 
 func ListenAndServe(addr string) error {
-	casbinAuthProvider, err := authprovider.NewCasbinAuthProvider("model.conf")
+	authProvider, err := authprovider.NewAuthProvider()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	mux := http.NewServeMux()
 	mux.Handle(sgroupsconnect.NewSecGroupServiceHandler(
-		api.NewSecGroupService(casbinAuthProvider),
+		api.NewSecGroupService(authProvider),
 	))
 
 	srv := &http.Server{

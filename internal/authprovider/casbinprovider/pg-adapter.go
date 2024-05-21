@@ -1,4 +1,4 @@
-package authprovider
+package casbinprovider
 
 import (
 	"os"
