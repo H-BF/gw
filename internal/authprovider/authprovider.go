@@ -3,6 +3,7 @@ package authprovider
 import (
 	"context"
 	"fmt"
+
 	"github.com/H-BF/gw/pkg/authprovider"
 
 	"github.com/casbin/casbin/v2"
@@ -44,7 +45,7 @@ func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvi
 func (c CasbinAuthProvider) Authorize(_ context.Context, sub, obj, act string) (bool, error) {
 	// todo: make a more beautiful solution so that there is no coping code
 	if !c.subExists(sub) {
-		return false, fmt.Errorf("you cannot add a resource to an existing user - %s", sub) // сообщение в ошибке сбивает с толку - не делай так
+		return false, fmt.Errorf("user does not exist in the system")
 	}
 	// TODO: ^^^^^^ нам не нужно самостоятельно лезть в касбин для проверки авторизации - это сделает enforcer.Enforce
 	// УДАЛИТЬ!!!
@@ -79,7 +80,7 @@ func (c CasbinAuthProvider) AddResourcesToGroup(_ context.Context, sub string, o
 
 	for _, obj := range objs {
 		if _, err := c.enforcer.AddNamedGroupingPolicy(G2, sub+subGroupSuffix, obj); err != nil {
-			return err
+			return fmt.Errorf("an error occurred during created of the %s resource: %v", obj, err)
 		}
 	}
 	return c.enforcer.SavePolicy()
@@ -89,7 +90,7 @@ func (c CasbinAuthProvider) AddResourcesToGroup(_ context.Context, sub string, o
 func (c CasbinAuthProvider) RemoveResourcesFromGroup(_ context.Context, sub string, objs ...string) error {
 	for _, obj := range objs {
 		if _, err := c.enforcer.RemoveNamedGroupingPolicy(G2, sub+subGroupSuffix, obj); err != nil {
-			return err
+			return fmt.Errorf("an error occurred during deletion of the %s resource: %v", obj, err)
 		}
 	}
 

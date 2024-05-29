@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/H-BF/gw/internal/client/SecGroup"
@@ -37,10 +38,14 @@ func (s SecGroupService) checkPermissions(ctx context.Context, reqTuples RTuples
 	for _, authReq := range reqTuples {
 		isAuth, err := s.authPlugin.Authorize(ctx, authReq[0], authReq[1], authReq[2])
 		if err != nil {
-			return err
+			log.Println(err)
+
+			return status.Errorf(codes.Internal, "error during auth attempt: %v", err)
 		}
 
 		if !isAuth {
+			log.Println(err)
+
 			return status.Errorf(
 				codes.PermissionDenied,
 				"user %s does not have access or action permision to the %s resource, action - %s",
@@ -58,11 +63,15 @@ func (s SecGroupService) Sync(
 ) (*connect.Response[emptypb.Empty], error) {
 	sub, err := extractSub(c)
 	if err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var tt RTuples
 	if err := tt.FromSync(c.Msg, sub); err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -71,14 +80,22 @@ func (s SecGroupService) Sync(
 	for _, authReq := range tt {
 		authResp, err := s.authPlugin.AuthorizeIfExist(ctx, authReq[0], authReq[1], authReq[2])
 		if err != nil {
+			log.Println(err)
+
 			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 
 		if !authResp.Authorized {
-			return nil, status.Errorf(
-				codes.PermissionDenied,
+			err = fmt.Errorf(
 				"user %s does not have access or action permision to the %s resource, action - %s",
 				authReq[0], authReq[1], authReq[2],
+			)
+
+			log.Println(err)
+
+			return nil, status.Error(
+				codes.PermissionDenied,
+				err.Error(),
 			)
 		}
 
@@ -102,6 +119,8 @@ func (s SecGroupService) Sync(
 				log.Println(err)
 			}
 		}
+	} else {
+		log.Println(err)
 	}
 
 	return sgroupsResp, err
@@ -113,18 +132,29 @@ func (s SecGroupService) ListNetworks(
 ) (*connect.Response[sgroups.ListNetworksResp], error) {
 	sub, err := extractSub(c)
 	if err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var tt RTuples
 	if err := tt.FromListNetworks(c.Msg, sub); err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := s.checkPermissions(ctx, tt); err != nil {
+		log.Println(err)
+
 		return nil, err
 	}
 
-	return s.gwClient.ListNetworks(ctx, c)
+	res, err := s.gwClient.ListNetworks(ctx, c)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return res, err
 }
 
 func (s SecGroupService) ListSecurityGroups(
@@ -133,18 +163,29 @@ func (s SecGroupService) ListSecurityGroups(
 ) (*connect.Response[sgroups.ListSecurityGroupsResp], error) {
 	sub, err := extractSub(c)
 	if err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var tt RTuples
 	if err := tt.FromListSecurityGroups(c.Msg, sub); err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := s.checkPermissions(ctx, tt); err != nil {
+		log.Println(err)
+
 		return nil, err
 	}
 
-	return s.gwClient.ListSecurityGroups(ctx, c)
+	res, err := s.gwClient.ListSecurityGroups(ctx, c)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return res, err
 }
 
 func (s SecGroupService) GetRules(
@@ -153,18 +194,29 @@ func (s SecGroupService) GetRules(
 ) (*connect.Response[sgroups.RulesResp], error) {
 	sub, err := extractSub(c)
 	if err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var tt RTuples
 	if err := tt.FromGetRules(c.Msg, sub); err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := s.checkPermissions(ctx, tt); err != nil {
+		log.Println(err)
+
 		return nil, err
 	}
 
-	return s.gwClient.GetRules(ctx, c)
+	res, err := s.gwClient.GetRules(ctx, c)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return res, err
 }
 
 func (s SecGroupService) FindRules(
@@ -173,18 +225,29 @@ func (s SecGroupService) FindRules(
 ) (*connect.Response[sgroups.RulesResp], error) {
 	sub, err := extractSub(c)
 	if err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var tt RTuples
 	if err := tt.FromFindRules(c.Msg, sub); err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := s.checkPermissions(ctx, tt); err != nil {
+		log.Println(err)
+
 		return nil, err
 	}
 
-	return s.gwClient.FindRules(ctx, c)
+	res, err := s.gwClient.FindRules(ctx, c)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return res, err
 }
 
 func (s SecGroupService) FindFqdnRules(
@@ -193,18 +256,29 @@ func (s SecGroupService) FindFqdnRules(
 ) (*connect.Response[sgroups.FqdnRulesResp], error) {
 	sub, err := extractSub(c)
 	if err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var tt RTuples
 	if err := tt.FromFindFqdnRules(c.Msg, sub); err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := s.checkPermissions(ctx, tt); err != nil {
+		log.Println(err)
+
 		return nil, err
 	}
 
-	return s.gwClient.FindFqdnRules(ctx, c)
+	res, err := s.gwClient.FindFqdnRules(ctx, c)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return res, err
 }
 
 func (s SecGroupService) FindCidrSgRules(
@@ -213,18 +287,29 @@ func (s SecGroupService) FindCidrSgRules(
 ) (*connect.Response[sgroups.CidrSgRulesResp], error) {
 	sub, err := extractSub(c)
 	if err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var tt RTuples
 	if err := tt.FromFindCidrSgRules(c.Msg, sub); err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := s.checkPermissions(ctx, tt); err != nil {
+		log.Println(err)
+
 		return nil, err
 	}
 
-	return s.gwClient.FindCidrSgRules(ctx, c)
+	res, err := s.gwClient.FindCidrSgRules(ctx, c)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return res, err
 }
 
 func (s SecGroupService) FindSgSgRules(
@@ -233,16 +318,27 @@ func (s SecGroupService) FindSgSgRules(
 ) (*connect.Response[sgroups.SgSgRulesResp], error) {
 	sub, err := extractSub(c)
 	if err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var tt RTuples
 	if err := tt.FromFindSgSgRules(c.Msg, sub); err != nil {
+		log.Println(err)
+
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := s.checkPermissions(ctx, tt); err != nil {
+		log.Println(err)
+
 		return nil, err
 	}
 
-	return s.gwClient.FindSgSgRules(ctx, c)
+	res, err := s.gwClient.FindSgSgRules(ctx, c)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return res, err
 }
