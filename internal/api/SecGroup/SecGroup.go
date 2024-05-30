@@ -38,14 +38,10 @@ func (s SecGroupService) checkPermissions(ctx context.Context, reqTuples RTuples
 	for _, authReq := range reqTuples {
 		isAuth, err := s.authPlugin.Authorize(ctx, authReq[0], authReq[1], authReq[2])
 		if err != nil {
-			log.Println(err)
-
 			return status.Errorf(codes.Internal, "error during auth attempt: %v", err)
 		}
 
 		if !isAuth {
-			log.Println(err)
-
 			return status.Errorf(
 				codes.PermissionDenied,
 				"user %s does not have access or action permision to the %s resource, action - %s",
