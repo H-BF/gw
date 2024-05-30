@@ -2,12 +2,11 @@ package authprovider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/H-BF/gw/pkg/authprovider"
 
 	"github.com/casbin/casbin/v2"
-
-	"github.com/pkg/errors"
 )
 
 type CasbinAuthProvider struct {
@@ -15,8 +14,6 @@ type CasbinAuthProvider struct {
 }
 
 var _ authprovider.AuthProvider = (*CasbinAuthProvider)(nil)
-
-const pkgApi = "authprovider."
 
 const ( // available actions of a role model
 	ReadAction      = "read"
@@ -36,11 +33,9 @@ const (
 )
 
 func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvider, error) {
-	const api = pkgApi + "NewCasbinAuthProvider"
-
 	enforcer, err := casbin.NewEnforcer(modelPath, policyPath)
 	if err != nil {
-		return nil, errors.Wrap(err, api)
+		return nil, err
 	}
 
 	return &CasbinAuthProvider{enforcer}, nil
@@ -48,24 +43,18 @@ func NewCasbinAuthProvider(modelPath, policyPath string) (authprovider.AuthProvi
 
 // Authorize implements authprovider.AuthProvider
 func (c CasbinAuthProvider) Authorize(_ context.Context, sub, obj, act string) (bool, error) {
-	const api = pkgApi + "CasbinAuthProvider.Authorize"
-
 	// todo: make a more beautiful solution so that there is no coping code
 	if !c.subExists(sub) {
-		return false, errors.Wrap(errors.New("user does not exist in the system"), api)
+		return false, fmt.Errorf("user does not exist in the system")
 	}
 	// TODO: ^^^^^^ нам не нужно самостоятельно лезть в касбин для проверки авторизации - это сделает enforcer.Enforce
 	// УДАЛИТЬ!!!
 
-	isAuth, err := c.enforcer.Enforce(sub, obj, act)
-
-	return isAuth, errors.Wrap(err, api)
+	return c.enforcer.Enforce(sub, obj, act)
 }
 
 // AuthorizeIfExist implements authprovider.AuthProvider
 func (c CasbinAuthProvider) AuthorizeIfExist(_ context.Context, sub, obj, act string) (authprovider.AuthWithExistResp, error) {
-	const api = pkgApi + "CasbinAuthProvider.AuthorizeIfExist"
-
 	authorized, reasons, err := c.enforcer.EnforceEx(sub, obj, act)
 	if !authorized && len(reasons) == 0 { // `obj` is new for casbin
 		if exists := c.objExists(obj); !exists {
@@ -80,37 +69,32 @@ func (c CasbinAuthProvider) AuthorizeIfExist(_ context.Context, sub, obj, act st
 	return authprovider.AuthWithExistResp{
 		Exist:      true,
 		Authorized: authorized,
-	}, errors.Wrap(err, api)
+	}, err
 }
 
 // AddResourcesToGroup implements authprovider.AuthProvider
 func (c CasbinAuthProvider) AddResourcesToGroup(_ context.Context, sub string, objs ...string) error {
-	const api = pkgApi + "CasbinAuthProvider.AddResourcesToGroup"
-
 	if !c.subExists(sub) {
-		return errors.Wrap(errors.Errorf("you cannot add a resource to an existing user - %s", sub), api)
+		return fmt.Errorf("you cannot add a resource to an existing user - %s", sub)
 	}
 
 	for _, obj := range objs {
 		if _, err := c.enforcer.AddNamedGroupingPolicy(G2, sub+subGroupSuffix, obj); err != nil {
-			return errors.Wrap(errors.Errorf("an error occurred during created of the %s resource: %v", obj, err), api)
+			return fmt.Errorf("an error occurred during created of the %s resource: %v", obj, err)
 		}
 	}
-
-	return errors.Wrap(c.enforcer.SavePolicy(), api)
+	return c.enforcer.SavePolicy()
 }
 
 // RemoveResourcesFromGroup implements authprovider.RemoveResourceFromGroup
 func (c CasbinAuthProvider) RemoveResourcesFromGroup(_ context.Context, sub string, objs ...string) error {
-	const api = pkgApi + "CasbinAuthProvider.RemoveResourcesFromGroup"
-
 	for _, obj := range objs {
 		if _, err := c.enforcer.RemoveNamedGroupingPolicy(G2, sub+subGroupSuffix, obj); err != nil {
-			return errors.Wrap(errors.Errorf("an error occurred during deletion of the %s resource: %v", obj, err), api)
+			return fmt.Errorf("an error occurred during deletion of the %s resource: %v", obj, err)
 		}
 	}
 
-	return errors.Wrap(c.enforcer.SavePolicy(), api)
+	return c.enforcer.SavePolicy()
 }
 
 func (c CasbinAuthProvider) objExists(obj string) bool {
