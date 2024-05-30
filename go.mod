@@ -6,6 +6,7 @@ require (
 	connectrpc.com/connect v1.16.1
 	github.com/H-BF/protos v0.12.1-0.20240502182710-c99377c2a955
 	github.com/casbin/casbin/v2 v2.88.0
+	github.com/pkg/errors v0.9.1
 	golang.org/x/net v0.21.0
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.34.1
