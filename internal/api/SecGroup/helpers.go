@@ -2,7 +2,9 @@ package api
 
 import (
 	"connectrpc.com/connect"
+	"errors"
 	"github.com/H-BF/protos/pkg/api/sgroups"
+	"strings"
 )
 
 type SecGroupReq interface {
@@ -10,6 +12,14 @@ type SecGroupReq interface {
 		sgroups.FindRulesReq | sgroups.FindFqdnRulesReq | sgroups.FindCidrSgRulesReq | sgroups.FindSgSgRulesReq
 }
 
-func extractSub[T SecGroupReq](c *connect.Request[T]) (string, error) {
-	return c.Header().Get(userIDHeaderKey), nil
+var (
+	errEmptyAuthnInfo = errors.New("empty authentication info")
+)
+
+func extractSub[T SecGroupReq](c *connect.Request[T]) (sub string, err error) {
+	sub = strings.TrimSpace(c.Header().Get(userIDHeaderKey))
+	if sub == "" {
+		err = errEmptyAuthnInfo
+	}
+	return sub, err
 }
