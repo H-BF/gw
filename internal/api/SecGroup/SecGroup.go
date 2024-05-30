@@ -79,15 +79,15 @@ func (s SecGroupService) Sync(
 		}
 
 		if !authResp.Authorized {
-			err = fmt.Errorf(
-				"user %s does not have access or action permision to the %s resource, action - %s",
+			errMsg := fmt.Sprintf(
+				"user %s does not have access or action permission to the %s resource, action - %s",
 				authReq[0], authReq[1], authReq[2],
 			)
 
-			log.Println(err)
+			log.Println(errMsg)
 			return nil, status.Error(
 				codes.PermissionDenied,
-				err.Error(),
+				errMsg,
 			)
 		}
 
