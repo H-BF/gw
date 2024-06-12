@@ -1,36 +1,31 @@
 package httpserver
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
-	api "github.com/H-BF/gw/internal/api/SecGroup"
-	"github.com/H-BF/gw/internal/authprovider"
-
-	"github.com/H-BF/protos/pkg/api/sgroups/sgroupsconnect"
+	_ "github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func ListenAndServe(addr string) error {
-	casbinAuthProvider, err := authprovider.NewCasbinAuthProvider("model.conf", "policy.csv")
-	if err != nil {
-		log.Fatal(err)
-	}
+var srv *http.Server
 
-	mux := http.NewServeMux()
-	mux.Handle(sgroupsconnect.NewSecGroupServiceHandler(
-		api.NewSecGroupService(casbinAuthProvider),
-	))
-
-	srv := &http.Server{
-		Addr:              addr,
-		Handler:           mux,
+func ListenAndServe(port uint, handlers http.Handler) error {
+	srv = &http.Server{
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           handlers,
 		ReadTimeout:       5 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		ReadHeaderTimeout: 3 * time.Second,
 	}
 
-	log.Printf("server listening on http://127.0.0.1:%s", addr)
+	log.Printf("server listening on http://127.0.0.1:%d", port)
 
 	return srv.ListenAndServe()
+}
+
+func Shutdown(ctx context.Context) error {
+	return srv.Shutdown(ctx)
 }
