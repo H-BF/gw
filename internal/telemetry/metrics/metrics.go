@@ -14,17 +14,18 @@ const ( // config constants
 )
 
 type GwMetrics struct {
-	// Service    string
-	// Method     string
-	// ClientName string
-	errorCount *prometheus.CounterVec
+	errorCount   *prometheus.CounterVec
+	grpcMessages *prometheus.CounterVec
 }
 
+const nsGw = "gw"
+
 const (
-	labelUserAgent = "user_agent"
-	labelHostName  = "host_name"
-	labelSource    = "source"
-	nsGw           = "gw"
+	labelUserAgent   = "user_agent"
+	labelHostName    = "host_name"
+	labelSource      = "source"
+	labelGrpcMethod  = "method"
+	labelGrpcService = "service"
 )
 
 const ErrSrcGwServer = "gw-svc"
@@ -51,6 +52,7 @@ func SetupMetric(ctx context.Context, f func(reg *prometheus.Registry) error) er
 	registry := prometheus.NewRegistry()
 	collectors := []prometheus.Collector{
 		gmMetrics.errorCount,
+		gmMetrics.grpcMessages,
 	}
 
 	for _, collector := range collectors {
@@ -70,6 +72,12 @@ func newGmMetrics(labels prometheus.Labels) *GwMetrics {
 			Help:        "count of errors",
 			ConstLabels: labels,
 		}, []string{labelSource}),
+		grpcMessages: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace:   nsGw,
+			Name:        "server_grpc_messages",
+			Help:        "received and sent message counters",
+			ConstLabels: labels,
+		}, []string{labelGrpcMethod, labelGrpcService}),
 	}
 }
 
@@ -79,4 +87,8 @@ func GetGmMEtrics() *GwMetrics {
 
 func (gm *GwMetrics) IncError(src string) {
 	gm.errorCount.WithLabelValues(src).Inc()
+}
+
+func (gm *GwMetrics) IncGrpcMessage(method, service string) {
+	gm.grpcMessages.WithLabelValues(method, service).Inc()
 }

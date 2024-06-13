@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"strings"
 
 	"connectrpc.com/connect"
 )
@@ -14,6 +15,9 @@ func NewMetricInterceptor() (connect.Interceptor, error) {
 			}
 
 			gm := GetGmMEtrics()
+
+			calledServiceMethod := strings.Split(req.Spec().Procedure, "/")
+			gm.IncGrpcMessage(calledServiceMethod[2], calledServiceMethod[1])
 
 			res, err := next(ctx, req)
 			if err != nil {
