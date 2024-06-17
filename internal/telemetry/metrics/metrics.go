@@ -2,61 +2,55 @@ package metrics
 
 import (
 	"context"
-	"os"
 
+	"github.com/H-BF/gw/internal/telemetry/metrics/grpcmetrics"
+	"github.com/H-BF/gw/internal/telemetry/metrics/options"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 const ( // config constants
 	// MetricEnable - time const-blank for metrics activation
 	MetricEnable = true
-	UserAgent    = "telemetry/user/gw"
 )
 
 type GwMetrics struct {
-	errorCount   *prometheus.CounterVec
-	grpcMessages *prometheus.CounterVec
+	// errorCount *prometheus.CounterVec
+	*grpcmetrics.ConnMetrics
+	*grpcmetrics.TotalRequestsMetric
+	*grpcmetrics.ResponseTimeMetrics
+	*grpcmetrics.GrpcErrorMetrics
 }
-
-const nsGw = "gw"
-
-const (
-	labelUserAgent   = "user_agent"
-	labelHostName    = "host_name"
-	labelSource      = "source"
-	labelGrpcMethod  = "method"
-	labelGrpcService = "service"
-)
-
-const ErrSrcGwServer = "gw-svc"
 
 var gmMetrics *GwMetrics
 
-func SetupMetric(ctx context.Context, f func(reg *prometheus.Registry) error) error {
+func SetupMetric(ctx context.Context, f func(reg *prometheus.Registry) error, opts ...options.Options) error {
 	if !MetricEnable {
 		return nil
 	}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return err
+	defaultServerMetricOptions := options.DefaultServerMetricsOptions()
+	for _, opt := range opts {
+		opt(&defaultServerMetricOptions)
 	}
 
-	labels := prometheus.Labels{
-		labelUserAgent: UserAgent,
-		labelHostName:  hostname,
-	}
-
-	gmMetrics = newGmMetrics(labels)
+	gmMetrics = newGmMetrics(defaultServerMetricOptions)
 
 	registry := prometheus.NewRegistry()
 	collectors := []prometheus.Collector{
-		gmMetrics.errorCount,
-		gmMetrics.grpcMessages,
+		gmMetrics.GetGrpcErrCounter(),
+		gmMetrics.GetConnGauge(),
+		gmMetrics.GetResTimeHist(),
+	}
+
+	reqTotalCollectors := gmMetrics.GetAllTotalRequestCollectors()
+	collectors = append(collectors, reqTotalCollectors...)
+
+	if len(defaultServerMetricOptions.StandardMetrics) > 0 {
+		collectors = append(collectors, defaultServerMetricOptions.StandardMetrics...)
 	}
 
 	for _, collector := range collectors {
-		if err = registry.Register(collector); err != nil {
+		if err := registry.Register(collector); err != nil {
 			return err
 		}
 	}
@@ -64,20 +58,12 @@ func SetupMetric(ctx context.Context, f func(reg *prometheus.Registry) error) er
 	return f(registry)
 }
 
-func newGmMetrics(labels prometheus.Labels) *GwMetrics {
+func newGmMetrics(opts options.ServerMetricsOptions) *GwMetrics {
 	return &GwMetrics{
-		errorCount: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace:   nsGw,
-			Name:        "errors",
-			Help:        "count of errors",
-			ConstLabels: labels,
-		}, []string{labelSource}),
-		grpcMessages: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace:   nsGw,
-			Name:        "server_grpc_messages",
-			Help:        "received and sent message counters",
-			ConstLabels: labels,
-		}, []string{labelGrpcMethod, labelGrpcService}),
+		GrpcErrorMetrics:    grpcmetrics.NewGrpcErrorMetrics(opts),
+		ConnMetrics:         grpcmetrics.NewConnMetrics(opts),
+		TotalRequestsMetric: grpcmetrics.NewTotalRequestsMetric(opts),
+		ResponseTimeMetrics: grpcmetrics.NewResponseTimeMetrics(opts),
 	}
 }
 
@@ -85,10 +71,6 @@ func GetGmMEtrics() *GwMetrics {
 	return gmMetrics
 }
 
-func (gm *GwMetrics) IncError(src string) {
-	gm.errorCount.WithLabelValues(src).Inc()
-}
-
-func (gm *GwMetrics) IncGrpcMessage(method, service string) {
-	gm.grpcMessages.WithLabelValues(method, service).Inc()
-}
+// func (gm *GwMetrics) IncError(src string) {
+// 	gm.errorCount.WithLabelValues(src).Inc()
+// }

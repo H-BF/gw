@@ -1,41 +1,50 @@
 package options
 
-type (
-	serverMetricsOptions struct {
-		Namespace string
-		Subsystem string
-	}
-
-	Options interface {
-		apply(*serverMetricsOptions)
-	}
-
-	serverMetricsOptionApplier func(*serverMetricsOptions)
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
-var _ Options = (serverMetricsOptionApplier)(nil)
+type (
+	ServerMetricsOptions struct {
+		Namespace string
+		Subsystem string
+
+		StandardMetrics []prometheus.Collector
+	}
+
+	Options func(*ServerMetricsOptions)
+)
 
 const (
 	DefaultNamespace = "sys"
 	DefaultSubsystem = "grpc_server"
 )
 
-func (applier serverMetricsOptionApplier) apply(opts *serverMetricsOptions) {
-	applier(opts)
+func DefaultServerMetricsOptions() ServerMetricsOptions {
+	return ServerMetricsOptions{
+		Namespace: DefaultNamespace,
+		Subsystem: DefaultSubsystem,
+	}
 }
 
 func WithNamespace(ns string) Options {
-	var applier serverMetricsOptionApplier = func(opts *serverMetricsOptions) {
-		opts.Namespace = ns
+	return func(smo *ServerMetricsOptions) {
+		smo.Namespace = ns
 	}
-
-	return applier
 }
 
 func WithSubsystem(ss string) Options {
-	var applier serverMetricsOptionApplier = func(opts *serverMetricsOptions) {
-		opts.Subsystem = ss
+	return func(smo *ServerMetricsOptions) {
+		smo.Subsystem = ss
 	}
+}
 
-	return applier
+func WithStandardMetrics() Options {
+	return func(smo *ServerMetricsOptions) {
+		smo.StandardMetrics = []prometheus.Collector{
+			collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+			collectors.NewGoCollector(),
+		}
+	}
 }
