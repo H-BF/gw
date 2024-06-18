@@ -70,7 +70,3 @@ func newGmMetrics(opts options.ServerMetricsOptions) *GwMetrics {
 func GetGmMEtrics() *GwMetrics {
 	return gmMetrics
 }
-
-// func (gm *GwMetrics) IncError(src string) {
-// 	gm.errorCount.WithLabelValues(src).Inc()
-// }
