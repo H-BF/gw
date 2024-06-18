@@ -9,7 +9,7 @@ type TotalRequestsMetric struct {
 	messages       *prometheus.CounterVec
 	methodStarted  *prometheus.CounterVec
 	methodFinished *prometheus.CounterVec
-	methodPanicked *prometheus.CounterVec // todo: пока что не знаю что с этим делать
+	methodPanicked *prometheus.CounterVec
 }
 
 const (
@@ -52,6 +52,7 @@ func NewTotalRequestsMetric(serverMetricsOptions options.ServerMetricsOptions) *
 		methodFinished: finished,
 		methodPanicked: panicked,
 	}
+
 }
 
 func (trm *TotalRequestsMetric) GetAllTotalRequestCollectors() []prometheus.Collector {
@@ -98,4 +99,14 @@ func (trm *TotalRequestsMetric) IncReceivedSentMessage(service, method string, i
 	}
 
 	trm.messages.With(labels).Inc()
+}
+
+func (trm *TotalRequestsMetric) ObservePanic(service, method, clientName string) {
+	labels := prometheus.Labels{
+		LabelService:    service,
+		LabelMethod:     method,
+		LabelClientName: clientName,
+	}
+
+	trm.methodPanicked.With(labels).Inc()
 }

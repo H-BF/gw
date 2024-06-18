@@ -24,6 +24,14 @@ func NewMetricInterceptor() (connect.Interceptor, error) {
 			service := procedure[1]
 			method := procedure[2]
 
+			clientName := req.Header().Get("user-agent")
+
+			defer func() {
+				if panicked := recover(); panicked != nil {
+					gm.ObservePanic(service, method, clientName)
+				}
+			}()
+
 			gm.IncReceivedSentMessage(service, method, req.Spec().IsClient)
 
 			start := time.Now()
@@ -34,11 +42,10 @@ func NewMetricInterceptor() (connect.Interceptor, error) {
 
 			gm.ObserveResTime(service, method, float64(time.Since(start).Microseconds()))
 
-			clientName := req.Header().Get("user-agent")
-			grpcCode := res.Trailer().Get("Grpc-Status")[0]
+			grpcCode := string(res.Trailer().Get("Grpc-Status")[0])
 
 			gm.IncStartedMethod(service, method, clientName)
-			defer gm.IncFinishedMethod(service, method, clientName, string(grpcCode))
+			defer gm.IncFinishedMethod(service, method, clientName, grpcCode)
 
 			return res, err
 		})
