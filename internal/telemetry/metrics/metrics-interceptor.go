@@ -24,6 +24,8 @@ func NewMetricInterceptor() (connect.Interceptor, error) {
 			service := procedure[1]
 			method := procedure[2]
 
+			gm.IncReceivedSentMessage(service, method, req.Spec().IsClient)
+
 			start := time.Now()
 			res, err := next(ctx, req)
 			if err != nil {

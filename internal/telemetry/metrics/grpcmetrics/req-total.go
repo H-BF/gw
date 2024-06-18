@@ -6,11 +6,16 @@ import (
 )
 
 type TotalRequestsMetric struct {
-	messages       *prometheus.CounterVec // todo: пока что не знаю что с этим делать
+	messages       *prometheus.CounterVec
 	methodStarted  *prometheus.CounterVec
 	methodFinished *prometheus.CounterVec
 	methodPanicked *prometheus.CounterVec // todo: пока что не знаю что с этим делать
 }
+
+const (
+	Received = "received"
+	Sent     = "sent"
+)
 
 func NewTotalRequestsMetric(serverMetricsOptions options.ServerMetricsOptions) *TotalRequestsMetric {
 	messages := prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -77,4 +82,20 @@ func (trm *TotalRequestsMetric) IncFinishedMethod(service, method, clientName, g
 	}
 
 	trm.methodFinished.With(labels).Inc()
+}
+
+func (trm *TotalRequestsMetric) IncReceivedSentMessage(service, method string, isClient bool) {
+	requestSpan := Sent
+
+	if !isClient {
+		requestSpan = Received
+	}
+
+	labels := prometheus.Labels{
+		LabelService: service,
+		LabelMethod:  method,
+		LabelState:   requestSpan,
+	}
+
+	trm.messages.With(labels).Inc()
 }
