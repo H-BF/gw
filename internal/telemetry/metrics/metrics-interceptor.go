@@ -2,10 +2,12 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
+	"google.golang.org/grpc/status"
 )
 
 func NewMetricInterceptor() (connect.Interceptor, error) {
@@ -26,11 +28,13 @@ func NewMetricInterceptor() (connect.Interceptor, error) {
 
 			clientName := req.Header().Get("user-agent")
 
-			defer func() {
+			// todo: in the future put it'n a sep interface `panicObserver`
+			defer func(gm *GwMetrics, service, method, clientName string) {
 				if panicked := recover(); panicked != nil {
 					gm.ObservePanic(service, method, clientName)
+					fmt.Println(panicked)
 				}
-			}()
+			}(gm, service, method, clientName)
 
 			gm.IncReceivedSentMessage(service, method, req.Spec().IsClient)
 
@@ -42,7 +46,7 @@ func NewMetricInterceptor() (connect.Interceptor, error) {
 
 			gm.ObserveResTime(service, method, float64(time.Since(start).Microseconds()))
 
-			grpcCode := string(res.Trailer().Get("Grpc-Status")[0])
+			grpcCode := status.Code(err).String()
 
 			gm.IncStartedMethod(service, method, clientName)
 			defer gm.IncFinishedMethod(service, method, clientName, grpcCode)

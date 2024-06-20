@@ -14,7 +14,6 @@ const ( // config constants
 )
 
 type GwMetrics struct {
-	// errorCount *prometheus.CounterVec
 	*grpcmetrics.ConnMetrics
 	*grpcmetrics.TotalRequestsMetric
 	*grpcmetrics.ResponseTimeMetrics

@@ -37,10 +37,12 @@ func main() {
 		connect.WithInterceptors(metricsInterceptor),
 	))
 
-	if err := metrics.SetupMetric(context.Background(), func(reg *prometheus.Registry) error {
+	cb := func(reg *prometheus.Registry) error {
 		mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 		return nil
-	}); err != nil {
+	}
+	err = metrics.SetupMetric(context.Background(), cb)
+	if err != nil {
 		log.Fatalln(err)
 	}
 
@@ -53,8 +55,4 @@ func main() {
 			log.Fatalln(err)
 		}
 	}(ctx)
-}
-
-func init() {
-
 }
