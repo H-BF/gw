@@ -26,25 +26,38 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	metricsInterceptor, err := metrics.NewMetricInterceptor()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	mux := http.NewServeMux()
-	mux.Handle(sgroupsconnect.NewSecGroupServiceHandler(
-		api.NewSecGroupService(casbinAuthProvider),
-		connect.WithInterceptors(metricsInterceptor),
-	))
 
-	cb := func(reg *prometheus.Registry) error {
+	var sgOpts []connect.HandlerOption
+
+	metrics.WhenMetricsEnabled(func(gm *metrics.GwMetrics) {
+		metricsInterceptor, err := metrics.NewMetricInterceptor()
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		sgOpts = append(sgOpts,
+			connect.WithInterceptors(metricsInterceptor),
+			connect.WithRecover(func(ctx context.Context, spec connect.Spec, header http.Header, recInfo any) error {
+				var service, method, clientName string // todo: заполнить переменные
+				gm.ObservePanic(service, method, clientName)
+
+				return nil
+			}))
+	})
+
+	err = metrics.SetupMetric(context.Background(), func(reg *prometheus.Registry) error {
 		mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 		return nil
-	}
-	err = metrics.SetupMetric(context.Background(), cb)
+	})
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	mux.Handle(sgroupsconnect.NewSecGroupServiceHandler(
+		api.NewSecGroupService(casbinAuthProvider),
+		sgOpts...,
+	))
 
 	if err = httpserver.ListenAndServe(port, mux); err != nil {
 		log.Fatalln(err)

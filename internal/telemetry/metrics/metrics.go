@@ -20,9 +20,16 @@ type GwMetrics struct {
 	*grpcmetrics.GrpcErrorMetrics
 }
 
-var gmMetrics *GwMetrics
+/*
+TODO: не нашел возможности включить/отключить сбор метрик го-рантайма в sgroups это делается с помощью опции `NoStandardMetrics`
+*/
 
-func SetupMetric(ctx context.Context, f func(reg *prometheus.Registry) error, opts ...options.Options) error {
+var (
+	gmMetrics             *GwMetrics
+	WhenMetricsEnabledFns []func(metrics *GwMetrics)
+)
+
+func SetupMetric(_ context.Context, f func(reg *prometheus.Registry) error, opts ...options.Options) error {
 	if !MetricEnable {
 		return nil
 	}
@@ -54,6 +61,10 @@ func SetupMetric(ctx context.Context, f func(reg *prometheus.Registry) error, op
 		}
 	}
 
+	for _, f := range WhenMetricsEnabledFns {
+		f(gmMetrics)
+	}
+
 	return f(registry)
 }
 
@@ -68,4 +79,11 @@ func newGmMetrics(opts options.ServerMetricsOptions) *GwMetrics {
 
 func GetGmMEtrics() *GwMetrics {
 	return gmMetrics
+}
+
+func WhenMetricsEnabled(f func(gm *GwMetrics)) {
+	if gmMetrics != nil {
+		panic("should be called before `SetupMetric`")
+	}
+	WhenMetricsEnabledFns = append(WhenMetricsEnabledFns, f)
 }

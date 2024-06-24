@@ -88,6 +88,7 @@ func (trm *TotalRequestsMetric) IncFinishedMethod(service, method, clientName, g
 func (trm *TotalRequestsMetric) IncReceivedSentMessage(service, method string, isClient bool) {
 	requestSpan := Sent
 
+	// todo: клиент может только отправлять сообщения, а сервер - принимать??? подумать над этим и исправить логику
 	if !isClient {
 		requestSpan = Received
 	}

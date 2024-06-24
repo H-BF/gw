@@ -11,11 +11,12 @@ import (
 )
 
 func NewMetricInterceptor() (connect.Interceptor, error) {
-	var metricsInterceptor connect.UnaryInterceptorFunc = func(next connect.UnaryFunc) connect.UnaryFunc {
+	var metricsInterceptor connect.UnaryInterceptorFunc = func(next connect.UnaryFunc) connect.UnaryFunc { // TODO: необходимо собирать метрики не только для unary handler
 		return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			if !MetricEnable {
-				return next(ctx, req)
-			}
+			// todo: проверь нужно ли еще это условие?
+			//if !MetricEnable {
+			//	return next(ctx, req)
+			//}
 
 			gm := GetGmMEtrics()
 
