@@ -26,7 +26,7 @@ type SecGroupService struct {
 }
 
 func NewSecGroupService(authPlugin authprovider.AuthProvider) sgroupsconnect.SecGroupServiceHandler {
-	gwClient := SecGroup.NewClient("http://localhost:9000")
+	gwClient := SecGroup.NewClient()
 
 	return &SecGroupService{
 		authPlugin: authPlugin,
